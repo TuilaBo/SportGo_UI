@@ -5,12 +5,15 @@ import backgroundImage from '../../assets/bong-da-mon-the-thao-vua.jpg';
 import ManagerBar from '../../components/ManagerBar';
 import Footer from '../../components/Footer';
 import { useAuth } from '../../contexts/AuthContext';
+import { loginUser, testLoginAPI } from '../../services/authService';
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -23,26 +26,72 @@ const LoginPage = () => {
   }, [navigate]);
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+    
+    // Clear error when user starts typing
+    if (error) {
+      setError('');
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleTestAPI = async () => {
+    try {
+      console.log('Testing API connection...');
+      const result = await testLoginAPI();
+      console.log('Test result:', result);
+      alert(`API Test Result:\nStatus: ${result.status}\nBody: ${result.body}`);
+    } catch (error) {
+      console.error('Test failed:', error);
+      alert(`API Test Failed: ${error.message}`);
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.email && formData.password) {
-      // Simulate login - in real app, this would be an API call
-      const userData = {
-        id: 1,
-        name: 'Người dùng',
+    
+    if (!formData.email || !formData.password) {
+      setError('Vui lòng điền đầy đủ thông tin');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const loginData = {
         email: formData.email,
-        avatar: 'https://via.placeholder.com/40'
+        password: formData.password,
+        deviceId: 'web-device',
+        deviceName: 'Web Browser'
       };
-      login(userData);
-      navigate('/booking');
-    } else {
-      alert('Vui lòng điền đầy đủ thông tin');
+
+      const result = await loginUser(loginData);
+      
+      // Save tokens to localStorage
+      localStorage.setItem('accessToken', result.accessToken);
+      localStorage.setItem('refreshToken', result.refreshToken);
+      
+      // Create user data object for context
+      const userData = {
+        id: result.userId || '1',
+        email: formData.email,
+        name: formData.email.split('@')[0], // Use email prefix as name
+        avatar: 'https://via.placeholder.com/40',
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken
+      };
+      
+      // Update auth context (this will automatically fetch complete user info from API)
+      await login(userData);
+      
+    } catch (error) {
+      setError(error.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -75,6 +124,13 @@ const LoginPage = () => {
 
             {/* Login Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Error Message */}
+              {error && (
+                <div className="bg-red-500/20 border border-red-400/30 rounded-xl p-4">
+                  <p className="text-red-300 text-sm text-center">{error}</p>
+                </div>
+              )}
+
               {/* Email Field */}
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-white mb-2">
@@ -118,7 +174,7 @@ const LoginPage = () => {
                   />
                   <span className="ml-2 text-sm text-white">Ghi nhớ đăng nhập</span>
                 </label>
-                <Link to="#" className="text-sm text-blue-300 hover:text-blue-200 transition-colors">
+                <Link to="/forgot-password" className="text-sm text-blue-300 hover:text-blue-200 transition-colors">
                   Quên mật khẩu?
                 </Link>
               </div>
@@ -126,9 +182,19 @@ const LoginPage = () => {
               {/* Login Button */}
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-transparent"
+                disabled={isLoading}
+                className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-transparent disabled:transform-none disabled:cursor-not-allowed"
               >
-                Đăng nhập
+                {isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+              </button>
+
+              {/* Test API Button - Temporary for debugging */}
+              <button
+                type="button"
+                onClick={handleTestAPI}
+                className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold py-2 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2 focus:ring-offset-transparent"
+              >
+                Test API Connection
               </button>
 
               {/* Social Login */}

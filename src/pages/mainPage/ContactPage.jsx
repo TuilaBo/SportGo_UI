@@ -1,12 +1,20 @@
 import React from 'react';
 import ManagerBar from '../../components/ManagerBar';
 import Footer from '../../components/Footer';
+import { useAuth } from '../../contexts/AuthContext';
 
 const ContactPage = () => {
+  const { isLoggedIn, user, logout } = useAuth();
+  
   return (
     <div className="min-h-screen bg-white w-full">
       {/* Manager Bar */}
-      <ManagerBar />
+      <ManagerBar 
+        isLoggedIn={isLoggedIn}
+        userName={user?.name}
+        userAvatar={user?.avatar}
+        onLogout={logout}
+      />
 
       {/* Main Content */}
       <div className="w-full px-4 sm:px-6 lg:px-8 py-12">
