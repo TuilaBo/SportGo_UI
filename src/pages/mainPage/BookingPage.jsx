@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useScrollAnimation } from '../../hooks/useScrollAnimation';
+import ManagerBar from '../../components/ManagerBar';
+import Footer from '../../components/Footer';
+import { useAuth } from '../../contexts/AuthContext';
 
 const BookingPage = () => {
+  const { isLoggedIn, user, logout } = useAuth();
   const [selectedField, setSelectedField] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
@@ -110,6 +114,14 @@ const BookingPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 w-full overflow-x-hidden">
+      {/* Manager Bar */}
+      <ManagerBar 
+        isLoggedIn={isLoggedIn}
+        userName={user?.name}
+        userAvatar={user?.avatar}
+        onLogout={logout}
+      />
+
       {/* Header Section */}
       <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white py-20">
         <div className="absolute inset-0 bg-black/20"></div>
@@ -447,6 +459,9 @@ const BookingPage = () => {
           </div>
         </motion.div>
       )}
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };

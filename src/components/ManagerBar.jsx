@@ -2,10 +2,21 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '../assets/logo.jpg';
+import { useAuth } from '../contexts/AuthContext';
+import { generateUserAvatar } from '../utils/avatarGenerator';
 
 const ManagerBar = ({ isLoggedIn = false, userName = null, userAvatar = null, onLogin, onLogout }) => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
+  
+  // Use auth context data if available, otherwise fall back to props
+  const currentUser = user || { name: userName, avatar: userAvatar };
+  const isUserLoggedIn = user ? true : isLoggedIn;
+  const handleLogout = onLogout || logout;
+  
+  // Generate avatar if not provided
+  const userAvatarUrl = currentUser.avatar || generateUserAvatar(currentUser.name, currentUser.email);
   
   const isActive = (path) => {
     return location.pathname === path;
@@ -53,7 +64,7 @@ const ManagerBar = ({ isLoggedIn = false, userName = null, userAvatar = null, on
           </motion.div>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex space-x-8">
+          <nav className="hidden md:flex space-x-8">
             {[
               { path: '/', label: 'Trang chủ', icon: '🏠' },
               { path: '/booking', label: 'Đặt sân', icon: '⚽' },
@@ -69,17 +80,17 @@ const ManagerBar = ({ isLoggedIn = false, userName = null, userAvatar = null, on
                   to={item.path} 
                   className={`relative group px-4 py-2 rounded-xl transition-all duration-300 font-medium ${
                     isActive(item.path) 
-                      ? 'text-white bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg' 
+                      ? 'text-white bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg font-semibold' 
                       : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
                   }`}
                 >
                   <motion.span 
-                    className="flex items-center space-x-2"
+                    className="flex items-center space-x-2 relative z-10"
                     whileHover={{ x: 2 }}
                     transition={{ duration: 0.2 }}
                   >
                     <span className="text-lg">{item.icon}</span>
-                    <span>{item.label}</span>
+                    <span className="text-inherit">{item.label}</span>
                   </motion.span>
                   
                   {isActive(item.path) && (
@@ -103,7 +114,7 @@ const ManagerBar = ({ isLoggedIn = false, userName = null, userAvatar = null, on
 
           {/* User Profile Section */}
           <div className="flex items-center space-x-4">
-            {isLoggedIn ? (
+            {isUserLoggedIn ? (
               <motion.div 
                 className="flex items-center space-x-3"
                 initial={{ opacity: 0, x: 20 }}
@@ -115,7 +126,7 @@ const ManagerBar = ({ isLoggedIn = false, userName = null, userAvatar = null, on
                   whileHover={{ scale: 1.05 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {userName}
+                  {currentUser.fullName || currentUser.name || 'User'}
                 </motion.span>
                 
                 <motion.div 
@@ -123,24 +134,16 @@ const ManagerBar = ({ isLoggedIn = false, userName = null, userAvatar = null, on
                   whileHover={{ scale: 1.1 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {userAvatar ? (
-                    <img 
-                      src={userAvatar} 
-                      alt="User Avatar" 
-                      className="w-10 h-10 rounded-full border-2 border-blue-500 object-cover shadow-md group-hover:shadow-lg transition-shadow duration-300"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full border-2 border-blue-500 bg-gradient-to-r from-blue-400 to-purple-400 flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow duration-300">
-                      <span className="text-white font-semibold text-sm">
-                        {userName ? userName.split(' ').map(n => n[0]).join('') : 'U'}
-                      </span>
-                    </div>
-                  )}
+                  <img 
+                    src={userAvatarUrl} 
+                    alt="User Avatar" 
+                    className="w-10 h-10 rounded-full border-2 border-blue-500 object-cover shadow-md group-hover:shadow-lg transition-shadow duration-300"
+                  />
                   <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
                 </motion.div>
                 
                 <motion.button 
-                  onClick={onLogout}
+                  onClick={handleLogout}
                   className="text-gray-500 hover:text-red-600 transition-colors duration-300 text-sm px-3 py-1 rounded-lg hover:bg-red-50"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -177,7 +180,7 @@ const ManagerBar = ({ isLoggedIn = false, userName = null, userAvatar = null, on
 
             {/* Mobile Menu Button */}
             <motion.button
-              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors duration-300"
+              className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors duration-300"
               onClick={toggleMobileMenu}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
@@ -211,7 +214,7 @@ const ManagerBar = ({ isLoggedIn = false, userName = null, userAvatar = null, on
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3 }}
-              className="lg:hidden border-t border-gray-200/50"
+              className="md:hidden border-t border-gray-200/50"
             >
               <div className="py-4 space-y-2">
                 {[
@@ -229,7 +232,7 @@ const ManagerBar = ({ isLoggedIn = false, userName = null, userAvatar = null, on
                       to={item.path} 
                       className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 font-medium ${
                         isActive(item.path) 
-                          ? 'text-white bg-gradient-to-r from-blue-600 to-purple-600' 
+                          ? 'text-white bg-gradient-to-r from-blue-600 to-purple-600 font-semibold' 
                           : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
                       }`}
                       onClick={() => setIsMobileMenuOpen(false)}

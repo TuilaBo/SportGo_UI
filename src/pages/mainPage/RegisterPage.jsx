@@ -1,24 +1,32 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import logo from '../../assets/logo.jpg';
 import backgroundImage from '../../assets/bong-da-mon-the-thao-vua.jpg';
 import ManagerBar from '../../components/ManagerBar';
 import Footer from '../../components/Footer';
+import { registerUser, verifyEmail } from '../../services/authService';
 
 const RegisterPage = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
+    fullName: '',
     email: '',
     phone: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    isProvider: false
   });
   const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [otpData, setOtpData] = useState({ email: '', otp: '', isProvider: false });
+  const [otpError, setOtpError] = useState('');
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     });
     
     // Clear error when user starts typing
@@ -32,6 +40,10 @@ const RegisterPage = () => {
 
   const validateForm = () => {
     const newErrors = {};
+
+    if (!formData.fullName) {
+      newErrors.fullName = 'Họ tên là bắt buộc';
+    }
 
     if (!formData.email) {
       newErrors.email = 'Email là bắt buộc';
@@ -61,12 +73,84 @@ const RegisterPage = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (validateForm()) {
-      // Here you would typically send the data to your backend
-      alert('Đăng ký thành công!');
+      setIsLoading(true);
+      try {
+        const userData = {
+          fullName: formData.fullName,
+          email: formData.email,
+          password: formData.password,
+          phoneNumber: formData.phone,
+          isProvider: formData.isProvider
+        };
+
+        const result = await registerUser(userData);
+        setRegistrationSuccess(true);
+        setOtpData({ 
+          email: formData.email, 
+          otp: '', 
+          isProvider: formData.isProvider 
+        });
+        alert(result.message);
+      } catch (error) {
+        alert(`Lỗi đăng ký: ${error.message}`);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const handleOtpSubmit = async (e) => {
+    e.preventDefault();
+    if (!otpData.otp) {
+      setOtpError('Vui lòng nhập mã OTP');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await verifyEmail(otpData.email, otpData.otp);
+      alert(result.message);
+      
+      // Save tokens to localStorage after successful verification
+      if (result.accessToken) {
+        localStorage.setItem('accessToken', result.accessToken);
+        localStorage.setItem('refreshToken', result.refreshToken || '');
+        
+        // Save basic user info
+        const userData = {
+          id: result.userId || 'temp',
+          email: otpData.email,
+          name: otpData.email.split('@')[0],
+          avatar: null,
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken || '',
+          isProvider: otpData.isProvider,
+          role: otpData.isProvider ? 'Provider' : 'User'
+        };
+        localStorage.setItem('user', JSON.stringify(userData));
+      }
+      
+      // Check if user is a provider
+      if (otpData.isProvider) {
+        // Redirect to provider profile page
+        navigate('/provider-profile', { 
+          state: { 
+            email: otpData.email,
+            accessToken: result.accessToken
+          } 
+        });
+      } else {
+        // Redirect to login page for regular users
+        navigate('/login');
+      }
+    } catch (error) {
+      setOtpError(error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -99,6 +183,27 @@ const RegisterPage = () => {
 
             {/* Registration Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Full Name Field */}
+              <div>
+                <label htmlFor="fullName" className="block text-sm font-medium text-white mb-2">
+                  Họ và tên
+                </label>
+                <input
+                  type="text"
+                  id="fullName"
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-3 bg-white/20 border rounded-xl text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent backdrop-blur-sm transition-all duration-300 ${
+                    errors.fullName ? 'border-red-400' : 'border-white/30'
+                  }`}
+                  placeholder="Nhập họ và tên của bạn"
+                />
+                {errors.fullName && (
+                  <p className="mt-1 text-sm text-red-300">{errors.fullName}</p>
+                )}
+              </div>
+
               {/* Email Field */}
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-white mb-2">
@@ -139,6 +244,44 @@ const RegisterPage = () => {
                 {errors.phone && (
                   <p className="mt-1 text-sm text-red-300">{errors.phone}</p>
                 )}
+              </div>
+
+              {/* Account Type Toggle */}
+              <div className="bg-white/10 rounded-xl p-4">
+                <label className="block text-sm font-medium text-white mb-3">
+                  Loại tài khoản
+                </label>
+                <div className="flex items-center space-x-6">
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="isProvider"
+                      value="false"
+                      checked={!formData.isProvider}
+                      onChange={(e) => setFormData({...formData, isProvider: e.target.value === 'true'})}
+                      className="w-4 h-4 text-blue-600 bg-white/20 border-white/30 focus:ring-blue-500 focus:ring-2"
+                    />
+                    <span className="ml-2 text-white">👤 Cá nhân</span>
+                  </label>
+                  
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="isProvider"
+                      value="true"
+                      checked={formData.isProvider}
+                      onChange={(e) => setFormData({...formData, isProvider: e.target.value === 'true'})}
+                      className="w-4 h-4 text-blue-600 bg-white/20 border-white/30 focus:ring-blue-500 focus:ring-2"
+                    />
+                    <span className="ml-2 text-white">🏢 Doanh nghiệp</span>
+                  </label>
+                </div>
+                <p className="mt-2 text-xs text-blue-200">
+                  {formData.isProvider 
+                    ? "Tài khoản doanh nghiệp sẽ cần thêm thông tin xác minh sau khi đăng ký" 
+                    : "Tài khoản cá nhân để đặt sân và sử dụng dịch vụ"
+                  }
+                </p>
               </div>
 
               {/* Password Field */}
@@ -206,9 +349,10 @@ const RegisterPage = () => {
               {/* Register Button */}
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-transparent"
+                disabled={isLoading}
+                className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-transparent disabled:transform-none disabled:cursor-not-allowed"
               >
-                Đăng ký
+                {isLoading ? 'Đang xử lý...' : 'Đăng ký'}
               </button>
 
               {/* Social Registration */}
@@ -261,6 +405,55 @@ const RegisterPage = () => {
                 </p>
               </div>
             </form>
+
+            {/* OTP Verification Form */}
+            {registrationSuccess && (
+              <div className="mt-8 p-6 bg-green-500/20 border border-green-400/30 rounded-xl">
+                <h2 className="text-xl font-bold text-white mb-4 text-center">Xác thực Email</h2>
+                <p className="text-green-100 text-center mb-6">
+                  Mã OTP đã được gửi đến email <strong>{otpData.email}</strong>. 
+                  Vui lòng kiểm tra và nhập mã OTP để hoàn tất đăng ký.
+                </p>
+                
+                <form onSubmit={handleOtpSubmit} className="space-y-4">
+                  <div>
+                    <label htmlFor="otp" className="block text-sm font-medium text-white mb-2">
+                      Mã OTP (6 số)
+                    </label>
+                    <input
+                      type="text"
+                      id="otp"
+                      name="otp"
+                      value={otpData.otp}
+                      onChange={(e) => setOtpData({ ...otpData, otp: e.target.value })}
+                      className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent backdrop-blur-sm transition-all duration-300"
+                      placeholder="Nhập mã OTP"
+                      maxLength="6"
+                    />
+                    {otpError && (
+                      <p className="mt-1 text-sm text-red-300">{otpError}</p>
+                    )}
+                  </div>
+                  
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 focus:ring-offset-transparent disabled:transform-none disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? 'Đang xác thực...' : 'Xác thực Email'}
+                  </button>
+                </form>
+                
+                <div className="text-center mt-4">
+                  <button
+                    onClick={() => setRegistrationSuccess(false)}
+                    className="text-blue-300 hover:text-blue-200 text-sm transition-colors"
+                  >
+                    Quay lại đăng ký
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </main>
