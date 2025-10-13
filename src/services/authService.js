@@ -258,3 +258,36 @@ export const verifyEmail = async (email, otp) => {
     throw error;
   }
 };
+
+// Logout user function
+export const logoutUser = async (refreshToken) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/Auth/logout`, {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        refreshToken: refreshToken
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      let message = `HTTP error! status: ${response.status}`;
+      try {
+        const data = JSON.parse(errorText || '{}');
+        message = data.message || data.error || message;
+      } catch {}
+      throw new Error(message);
+    }
+
+    // Some APIs return empty body on logout
+    const text = await response.text();
+    return text ? JSON.parse(text) : { success: true };
+  } catch (error) {
+    console.error('Logout error:', error);
+    throw error;
+  }
+};
