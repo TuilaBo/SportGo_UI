@@ -1,6 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import BusinessLayout from '../../components/layouts/BusinessLayout';
 import GoogleMapEmbed from '../../components/GoogleMapEmbed';
+import OperatingHoursModal from '../../components/OperatingHoursModal';
+import CalendarExceptionsModal from '../../components/CalendarExceptionsModal';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function BusinessDashboard() {
@@ -91,6 +93,13 @@ export default function BusinessDashboard() {
     return () => controller.abort();
   }, [user, facPage, facSize, facReloadTick]);
 
+  // Load sport types on mount
+  useEffect(() => {
+    if (user) {
+      loadSportTypes();
+    }
+  }, [user]);
+
   // Create facility
   const createFacility = async (evt) => {
     evt.preventDefault();
@@ -159,6 +168,47 @@ export default function BusinessDashboard() {
   const [courtDetailLoading, setCourtDetailLoading] = useState(false);
   const [courtDetailError, setCourtDetailError] = useState(null);
   const [courtSaving, setCourtSaving] = useState(false);
+  const [operatingHoursModalOpen, setOperatingHoursModalOpen] = useState(false);
+  const [calendarExceptionsModalOpen, setCalendarExceptionsModalOpen] = useState(false);
+  const [sportTypes, setSportTypes] = useState([]);
+  const [sportTypesLoading, setSportTypesLoading] = useState(false);
+  const [sportTypesError, setSportTypesError] = useState(null);
+
+  // Load sport types
+  const loadSportTypes = async () => {
+    try {
+      setSportTypesLoading(true);
+      setSportTypesError(null);
+      const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
+      
+      const res = await fetch('/api/provider/sport-types', {
+        method: 'GET',
+        headers: {
+          'accept': 'text/plain',
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      setSportTypes(Array.isArray(data) ? data : []);
+    } catch (e) {
+      setSportTypesError(e.message || String(e));
+      setSportTypes([]);
+    } finally {
+      setSportTypesLoading(false);
+    }
+  };
+
+  // Get sport name by ID
+  const getSportName = (sportTypeId) => {
+    const sport = sportTypes.find(s => s.sportTypeId === sportTypeId);
+    return sport ? sport.name : `Môn ${sportTypeId}`;
+  };
 
   const openFacility = async (facilityId) => {
     try {
@@ -375,7 +425,12 @@ export default function BusinessDashboard() {
             className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200"
           />
           <div className="md:col-span-3 flex items-center gap-3">
-            <button disabled={creating} type="submit" className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:brightness-110 disabled:opacity-50">Tạo chi nhánh</button>
+            <button disabled={creating} type="submit" className="px-4 py-2 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Tạo chi nhánh
+            </button>
             {createError && <div className="text-sm text-red-600">{createError}</div>}
           </div>
         </form>
@@ -473,8 +528,18 @@ export default function BusinessDashboard() {
                     <input value={facDetail.description} onChange={(e) => setFacDetail((d) => ({ ...d, description: e.target.value }))} className="border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-200" />
                   </div>
                   <div className="pt-2 flex items-center gap-3">
-                    <button disabled={facSaving} onClick={saveFacility} className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:brightness-110 disabled:opacity-50">Lưu thay đổi</button>
-                    <button disabled={facDeleting} onClick={deleteFacility} className="px-4 py-2 rounded-lg bg-red-600 text-white hover:brightness-110 disabled:opacity-50">Xóa</button>
+                    <button disabled={facSaving} onClick={saveFacility} className="px-4 py-2 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Lưu thay đổi
+                    </button>
+                    <button disabled={facDeleting} onClick={deleteFacility} className="px-4 py-2 rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 hover:border-red-300 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Xóa
+                    </button>
                   </div>
                   <div className="pt-4 border-t">
                     <div className="flex items-center justify-between mb-2">
@@ -502,11 +567,31 @@ export default function BusinessDashboard() {
                         <span>Hoạt động</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
-                        <label>SportTypeId</label>
-                        <input type="number" value={courtForm.sportTypeId} onChange={(e) => setCourtForm((f) => ({ ...f, sportTypeId: Number(e.target.value) || 1 }))} className="w-24 border border-gray-200 rounded px-2 py-1" />
+                        <label>Bộ Môn</label>
+                        <select 
+                          value={courtForm.sportTypeId} 
+                          onChange={(e) => setCourtForm((f) => ({ ...f, sportTypeId: Number(e.target.value) || 1 }))} 
+                          className="w-32 border border-gray-200 rounded px-2 py-1"
+                          disabled={sportTypesLoading}
+                        >
+                          {sportTypesLoading ? (
+                            <option value={courtForm.sportTypeId}>Đang tải...</option>
+                          ) : (
+                            sportTypes.map((sport) => (
+                              <option key={sport.sportTypeId} value={sport.sportTypeId}>
+                                {sport.name}
+                              </option>
+                            ))
+                          )}
+                        </select>
                       </div>
                       <div className="md:col-span-2">
-                        <button onClick={createCourt} className="px-4 py-2 rounded bg-emerald-600 text-white hover:brightness-110">Thêm sân</button>
+                        <button onClick={createCourt} className="px-4 py-2 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 transition-colors flex items-center gap-2">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                          Thêm sân
+                        </button>
                       </div>
                     </div>
                     <div className="overflow-x-auto border border-gray-200 rounded">
@@ -568,7 +653,7 @@ export default function BusinessDashboard() {
                           }}>
                               <td className="px-3 py-2">{c.courtId}</td>
                               <td className="px-3 py-2">{c.name}</td>
-                              <td className="px-3 py-2">{c.sport}</td>
+                              <td className="px-3 py-2">{getSportName(c.sportTypeId || c.sport)}</td>
                               <td className="px-3 py-2">{c.courtType}</td>
                               <td className="px-3 py-2">{c.defaultPrice?.toLocaleString('vi-VN')}</td>
                               <td className="px-3 py-2">{c.isActive ? '✅' : '❌'}</td>
@@ -628,6 +713,26 @@ export default function BusinessDashboard() {
                   <span>Hoạt động</span>
                 </div>
                 <div className="pt-2 flex items-center gap-3">
+                  <button 
+                    onClick={() => setOperatingHoursModalOpen(true)}
+                    className="px-4 py-2 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-300 transition-colors flex items-center gap-2"
+                    title="Quản lý giờ hoạt động"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Giờ hoạt động
+                  </button>
+                  <button 
+                    onClick={() => setCalendarExceptionsModalOpen(true)}
+                    className="px-4 py-2 rounded-lg border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 hover:border-purple-300 transition-colors flex items-center gap-2"
+                    title="Quản lý ngoại lệ lịch"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Ngoại lệ lịch
+                  </button>
                   <button disabled={courtSaving} onClick={async () => {
                     try {
                       setCourtSaving(true);
@@ -659,7 +764,12 @@ export default function BusinessDashboard() {
                     } finally {
                       setCourtSaving(false);
                     }
-                  }} className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:brightness-110 disabled:opacity-50">Lưu thay đổi</button>
+                  }} className="px-4 py-2 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:border-emerald-300 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Lưu thay đổi
+                  </button>
                 </div>
               </div>
             )}
@@ -717,6 +827,22 @@ export default function BusinessDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Operating Hours Modal */}
+      <OperatingHoursModal
+        courtId={selectedCourtId}
+        isOpen={operatingHoursModalOpen}
+        onClose={() => setOperatingHoursModalOpen(false)}
+        user={user}
+      />
+
+      {/* Calendar Exceptions Modal */}
+      <CalendarExceptionsModal
+        courtId={selectedCourtId}
+        isOpen={calendarExceptionsModalOpen}
+        onClose={() => setCalendarExceptionsModalOpen(false)}
+        user={user}
+      />
     </BusinessLayout>
   );
 }
