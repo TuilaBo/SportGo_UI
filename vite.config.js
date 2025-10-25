@@ -7,7 +7,17 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8081',
+        target: 'http://160.191.245.237/',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/facilities': {
+        target: 'http://160.191.245.237/',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/courts': {
+        target: 'http://160.191.245.237/',
         changeOrigin: true,
         secure: false,
       }

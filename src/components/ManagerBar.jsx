@@ -68,6 +68,7 @@ const ManagerBar = ({ isLoggedIn = false, userName = null, userAvatar = null, on
             {[
               { path: '/', label: 'Trang chủ', icon: '🏠' },
               { path: '/booking', label: 'Đặt sân', icon: '⚽' },
+              { path: '/search', label: 'Tìm sân', icon: '🔍' },
               { path: '/contact', label: 'Liên hệ', icon: '📞' }
             ].map((item, index) => (
               <motion.div
@@ -220,6 +221,7 @@ const ManagerBar = ({ isLoggedIn = false, userName = null, userAvatar = null, on
                 {[
                   { path: '/', label: 'Trang chủ', icon: '🏠' },
                   { path: '/booking', label: 'Đặt sân', icon: '⚽' },
+                  { path: '/search', label: 'Tìm sân', icon: '🔍' },
                   { path: '/contact', label: 'Liên hệ', icon: '📞' }
                 ].map((item, index) => (
                   <motion.div

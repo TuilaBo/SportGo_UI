@@ -15,7 +15,7 @@ export default function AdminLayout({ title = 'Admin', children }) {
           <nav className="bg-white border border-gray-200 rounded-xl p-3 space-y-1">
             <NavLink to="/admin" className={({ isActive }) => `block px-3 py-2 rounded-lg text-sm ${isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-100 text-gray-700'}`}>Bảng điều khiển</NavLink>
             <NavLink to="/admin/users" className={({ isActive }) => `block px-3 py-2 rounded-lg text-sm ${isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-100 text-gray-700'}`}>Người dùng</NavLink>
-            <NavLink to="/admin/providers" className={({ isActive }) => `block px-3 py-2 rounded-lg text-sm ${isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-100 text-gray-700'}`}>Doanh nghiệp</NavLink>
+            <NavLink to="/admin/packages" className={({ isActive }) => `block px-3 py-2 rounded-lg text-sm ${isActive ? 'bg-blue-600 text-white' : 'hover:bg-gray-100 text-gray-700'}`}>Gói dịch vụ</NavLink>
           </nav>
         </aside>
         <main className="col-span-12 md:col-span-9 lg:col-span-10">
@@ -27,6 +27,9 @@ export default function AdminLayout({ title = 'Admin', children }) {
     </div>
   );
 }
+
+
+
 
 
 

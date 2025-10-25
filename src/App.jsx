@@ -7,14 +7,17 @@ import BookingPage from './pages/mainPage/BookingPage';
 import ForgotPasswordPage from './pages/mainPage/ForgotPasswordPage';
 import ResetPasswordPage from './pages/mainPage/ResetPasswordPage';
 import ProviderProfilePage from './pages/mainPage/ProviderProfilePage';
+import PackagePaymentPage from './pages/mainPage/PackagePaymentPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import UsersManagePage from './pages/admin/UsersManagePage';
-import ProvidersManagePage from './pages/admin/ProvidersManagePage';
+import PackagesManagePage from './pages/admin/PackagesManagePage';
 import BusinessDashboard from './pages/doanhNghiep/BusinessDashboard';
 import CourtsPage from './pages/doanhNghiep/CourtsPage';
 import FacilitiesPage from './pages/doanhNghiep/FacilitiesPage';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import SportTypesManagePage from './pages/admin/SportTypesManagePage';
+import SearchPage from './pages/mainPage/SearchPage';
 import './App.css';
 
 function App() {
@@ -30,6 +33,8 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/provider-profile" element={<ProviderProfilePage />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/package-payment" element={<PackagePaymentPage />} />
           {/* Admin routes */}
           <Route
             path="/admin"
@@ -48,10 +53,18 @@ function App() {
             }
           />
           <Route
-            path="/admin/providers"
+            path="/admin/sport-types"
             element={
               <ProtectedRoute roles={["Admin"]}>
-                <ProvidersManagePage />
+                <SportTypesManagePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/packages"
+            element={
+              <ProtectedRoute roles={["Admin"]}>
+                <PackagesManagePage />
               </ProtectedRoute>
             }
           />

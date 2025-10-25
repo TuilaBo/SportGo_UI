@@ -17,13 +17,8 @@ const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Check if user is already logged in
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      navigate('/');
-    }
-  }, [navigate]);
+  // Remove the useEffect that causes immediate redirect
+  // Let the login process handle navigation naturally
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -87,6 +82,9 @@ const LoginPage = () => {
       
       // Update auth context (this will automatically fetch complete user info from API)
       await login(userData);
+      
+      // Navigate immediately after successful login
+      navigate('/');
       
     } catch (error) {
       setError(error.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
