@@ -3,7 +3,9 @@ import { motion } from 'framer-motion';
 import logo from '../../assets/logo.jpg';
 import backgroundImage from '../../assets/bong-da-mon-the-thao-vua.jpg';
 import ManagerBar from '../../components/ManagerBar';
+import SearchFacilities from '../../components/SearchFacilities';
 import Footer from '../../components/Footer';
+import SalePackages from '../../components/SalePackages';
 import { useAuth } from '../../contexts/AuthContext';
 import { useScrollAnimation } from '../../hooks/useScrollAnimation';
 
@@ -95,6 +97,12 @@ const HomePage = () => {
           </div>
         </div>
       </section>
+
+      {/* Search Facilities Section */}
+      <SearchFacilities />
+
+      {/* Sale Packages Section */}
+      <SalePackages />
 
       {/* Management Software Section */}
       <section className="py-20 bg-gray-50 w-full">

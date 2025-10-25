@@ -1,115 +1,271 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useScrollAnimation } from '../../hooks/useScrollAnimation';
 import ManagerBar from '../../components/ManagerBar';
 import Footer from '../../components/Footer';
 import { useAuth } from '../../contexts/AuthContext';
+import GoogleMapEmbed from '../../components/GoogleMapEmbed';
 
 const BookingPage = () => {
   const { isLoggedIn, user, logout } = useAuth();
-  const [selectedField, setSelectedField] = useState(null);
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedTime, setSelectedTime] = useState('');
-  const [bookingStep, setBookingStep] = useState(1); // 1: Select Field, 2: Select Time, 3: Confirm
+  
+  // Booking flow states
+  const [bookingStep, setBookingStep] = useState(1); // 1: Select Facility, 2: Select Court, 3: Select Slot
+  const [selectedFacility, setSelectedFacility] = useState(null);
+  const [selectedCourt, setSelectedCourt] = useState(null);
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  
+  // Data states
+  const [facilities, setFacilities] = useState([]);
+  const [courts, setCourts] = useState([]);
+  const [slots, setSlots] = useState([]);
+  
+  // Loading states
+  const [facilitiesLoading, setFacilitiesLoading] = useState(false);
+  const [courtsLoading, setCourtsLoading] = useState(false);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  
+  // Error states
+  const [facilitiesError, setFacilitiesError] = useState(null);
+  const [courtsError, setCourtsError] = useState(null);
+  const [slotsError, setSlotsError] = useState(null);
+  
+  // Sport types
+  const [sportTypes, setSportTypes] = useState([]);
+  const [selectedSportType, setSelectedSportType] = useState(null);
+  
+  // Date selection
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedTier, setSelectedTier] = useState('Normal');
 
-  const [fieldsRef, fieldsVisible] = useScrollAnimation(0.1);
-  const [bookingRef, bookingVisible] = useScrollAnimation(0.1);
+  const [facilitiesRef, facilitiesVisible] = useScrollAnimation(0.1);
+  const [courtsRef, courtsVisible] = useScrollAnimation(0.1);
+  const [slotsRef, slotsVisible] = useScrollAnimation(0.1);
 
-  const fieldTypes = [
-    {
-      id: 1,
-      name: 'Sân Bóng Đá 7 Người',
-      image: '⚽',
-      description: 'Sân bóng đá chuẩn 7 người với cỏ nhân tạo chất lượng cao',
-      price: '200,000 VNĐ/giờ',
-      features: ['Cỏ nhân tạo', 'Hệ thống chiếu sáng', 'Lưới chắn', 'Ghế ngồi'],
-      available: true,
-      rating: 4.8,
-      reviews: 156
-    },
-    {
-      id: 2,
-      name: 'Sân Bóng Đá 11 Người',
-      image: '🏟️',
-      description: 'Sân bóng đá chuẩn quốc tế 11 người với cỏ tự nhiên',
-      price: '500,000 VNĐ/giờ',
-      features: ['Cỏ tự nhiên', 'Hệ thống chiếu sáng LED', 'Khán đài', 'Phòng thay đồ'],
-      available: true,
-      rating: 4.9,
-      reviews: 89
-    },
-    {
-      id: 3,
-      name: 'Sân Tennis',
-      image: '🎾',
-      description: 'Sân tennis trong nhà với mặt sân cứng chuyên nghiệp',
-      price: '150,000 VNĐ/giờ',
-      features: ['Mặt sân cứng', 'Trong nhà', 'Hệ thống thông gió', 'Ghế ngồi'],
-      available: true,
-      rating: 4.7,
-      reviews: 203
-    },
-    {
-      id: 4,
-      name: 'Sân Cầu Lông',
-      image: '🏸',
-      description: 'Sân cầu lông trong nhà với sàn gỗ cao cấp',
-      price: '80,000 VNĐ/giờ',
-      features: ['Sàn gỗ', 'Trong nhà', 'Điều hòa', 'Lưới chuyên dụng'],
-      available: false,
-      rating: 4.6,
-      reviews: 134
-    },
-    {
-      id: 5,
-      name: 'Sân Bóng Chuyền',
-      image: '🏐',
-      description: 'Sân bóng chuyền trong nhà với sàn cao su',
-      price: '120,000 VNĐ/giờ',
-      features: ['Sàn cao su', 'Trong nhà', 'Lưới chuẩn', 'Ghế ngồi'],
-      available: true,
-      rating: 4.5,
-      reviews: 78
-    },
-    {
-      id: 6,
-      name: 'Sân Bóng Rổ',
-      image: '🏀',
-      description: 'Sân bóng rổ ngoài trời với mặt sân cứng',
-      price: '100,000 VNĐ/giờ',
-      features: ['Mặt sân cứng', 'Ngoài trời', 'Rổ chuẩn', 'Hệ thống chiếu sáng'],
-      available: true,
-      rating: 4.4,
-      reviews: 92
+  // Load sport types
+  useEffect(() => {
+    const loadSportTypes = async () => {
+      try {
+        const res = await fetch('/api/sport-types', {
+          method: 'GET',
+          headers: {
+            'accept': 'application/json'
+          }
+        });
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        setSportTypes(Array.isArray(data) ? data : []);
+        if (data.length > 0) {
+          setSelectedSportType(data[0]);
+        }
+      } catch (e) {
+        console.error('Failed to load sport types:', e);
+        setSportTypes([]);
+      }
+    };
+
+    loadSportTypes();
+  }, []);
+
+  // Load facilities when sport type is selected
+  useEffect(() => {
+    if (selectedSportType && selectedDate) {
+      loadFacilities();
     }
-  ];
+  }, [selectedSportType, selectedDate]);
 
-  const timeSlots = [
-    '06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
-    '12:00', '13:00', '14:00', '15:00', '16:00', '17:00',
-    '18:00', '19:00', '20:00', '21:00', '22:00'
-  ];
+  const loadFacilities = async () => {
+    try {
+      setFacilitiesLoading(true);
+      setFacilitiesError(null);
+      const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
+      
+      const res = await fetch(`/api/search/facilities?sportTypeId=${selectedSportType.sportTypeId}&date=${selectedDate}&start=08:00:00&end=22:00:00&tier=${selectedTier}&page=1&size=20`, {
+        method: 'GET',
+        headers: {
+          'accept': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
 
-  const handleFieldSelect = (field) => {
-    setSelectedField(field);
-    setBookingStep(2);
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      setFacilities(Array.isArray(data.items) ? data.items : []);
+    } catch (e) {
+      setFacilitiesError(e.message || String(e));
+      setFacilities([]);
+    } finally {
+      setFacilitiesLoading(false);
+    }
   };
 
-  const handleBookingConfirm = () => {
+  const loadCourts = async (facilityId) => {
+    try {
+      setCourtsLoading(true);
+      setCourtsError(null);
+      const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
+      
+      const res = await fetch(`/api/search/facilities/${facilityId}/courts?sportTypeId=${selectedSportType.sportTypeId}&page=1&size=20`, {
+        method: 'GET',
+        headers: {
+          'accept': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      setCourts(Array.isArray(data.items) ? data.items : []);
+    } catch (e) {
+      setCourtsError(e.message || String(e));
+      setCourts([]);
+    } finally {
+      setCourtsLoading(false);
+    }
+  };
+
+  const loadSlots = async (courtId) => {
+    try {
+      setSlotsLoading(true);
+      setSlotsError(null);
+      const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
+      
+      const res = await fetch(`/courts/courts/${courtId}/slots?date=${selectedDate}&tier=${selectedTier}`, {
+        method: 'GET',
+        headers: {
+          'accept': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      setSlots(Array.isArray(data) ? data : []);
+    } catch (e) {
+      setSlotsError(e.message || String(e));
+      setSlots([]);
+    } finally {
+      setSlotsLoading(false);
+    }
+  };
+
+  const handleFacilitySelect = (facility) => {
+    setSelectedFacility(facility);
+    setSelectedCourt(null);
+    setSelectedSlot(null);
+    setBookingStep(2);
+    loadCourts(facility.facilityId);
+  };
+
+  const handleCourtSelect = (court) => {
+    setSelectedCourt(court);
+    setSelectedSlot(null);
     setBookingStep(3);
-    // Here you would typically send the booking data to your API
-    console.log('Booking confirmed:', {
-      field: selectedField,
-      date: selectedDate,
-      time: selectedTime
-    });
+    loadSlots(court.courtId);
+  };
+
+  const handleSlotSelect = async (slot) => {
+    if (!slot.isBooked) {
+      setSelectedSlot(slot);
+      
+      // Confirm booking
+      const confirmed = window.confirm(
+        `Xác nhận đặt sân?\n\n` +
+        `Sân: ${selectedCourt?.name}\n` +
+        `Thời gian: ${slot.startTime} - ${slot.endTime}\n` +
+        `Giá: ${slot.price?.toLocaleString('vi-VN')} VNĐ\n` +
+        `Ngày: ${selectedDate}`
+      );
+      
+      if (confirmed) {
+        await handleBookingConfirm(slot);
+      }
+    }
+  };
+
+  const handleBookingConfirm = async (slot) => {
+    if (!slot || !selectedCourt) return;
+    
+    try {
+      const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
+      
+      // Call the actual booking API
+      const response = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({
+          courtId: selectedCourt.courtId,
+          slotIds: [slot.slotId],
+          bookingType: "123"
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `HTTP ${response.status}`);
+      }
+
+      const bookingResult = await response.json();
+      
+      // Show success message
+      alert(`🎉 Đặt sân thành công!\n\n` +
+        `Sân: ${selectedCourt.name}\n` +
+        `Cơ sở: ${selectedFacility?.facilityName}\n` +
+        `Thời gian: ${slot.startTime} - ${slot.endTime}\n` +
+        `Ngày: ${selectedDate}\n` +
+        `Giá: ${slot.price?.toLocaleString('vi-VN')} VNĐ\n` +
+        `Mã đặt sân: ${bookingResult.bookingId || 'N/A'}`);
+      
+      // Reset booking flow
+      resetBooking();
+      
+    } catch (error) {
+      console.error('Booking failed:', error);
+      alert(`❌ Có lỗi xảy ra khi đặt sân: ${error.message}\nVui lòng thử lại.`);
+    }
   };
 
   const resetBooking = () => {
-    setSelectedField(null);
-    setSelectedDate('');
-    setSelectedTime('');
     setBookingStep(1);
+    setSelectedFacility(null);
+    setSelectedCourt(null);
+    setSelectedSlot(null);
+    setFacilities([]);
+    setCourts([]);
+    setSlots([]);
+  };
+
+  const goBack = () => {
+    if (bookingStep > 1) {
+      setBookingStep(bookingStep - 1);
+      if (bookingStep === 3) {
+        setSelectedSlot(null);
+        setSlots([]);
+      } else if (bookingStep === 2) {
+        setSelectedCourt(null);
+        setCourts([]);
+      }
+    }
   };
 
   return (
@@ -140,8 +296,7 @@ const BookingPage = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
-            Chọn sân thể thao yêu thích và đặt lịch ngay hôm nay. 
-            Trải nghiệm dịch vụ đặt sân tiện lợi và chuyên nghiệp.
+            Chọn cơ sở, sân và slot phù hợp để đặt lịch ngay hôm nay.
           </motion.p>
         </div>
       </div>
@@ -174,288 +329,369 @@ const BookingPage = () => {
           
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              {bookingStep === 1 && 'Bước 1: Chọn Loại Sân'}
-              {bookingStep === 2 && 'Bước 2: Chọn Thời Gian'}
-              {bookingStep === 3 && 'Bước 3: Xác Nhận Đặt Sân'}
+              {bookingStep === 1 && 'Bước 1: Chọn Cơ Sở'}
+              {bookingStep === 2 && 'Bước 2: Chọn Sân'}
+              {bookingStep === 3 && 'Bước 3: Chọn Slot'}
             </h2>
             <p className="text-gray-600">
-              {bookingStep === 1 && 'Chọn loại sân thể thao bạn muốn đặt'}
-              {bookingStep === 2 && 'Chọn ngày và giờ bạn muốn đặt sân'}
-              {bookingStep === 3 && 'Xem lại thông tin và xác nhận đặt sân'}
+              {bookingStep === 1 && 'Chọn cơ sở thể thao bạn muốn đặt'}
+              {bookingStep === 2 && 'Chọn sân trong cơ sở đã chọn'}
+              {bookingStep === 3 && 'Chọn thời gian slot phù hợp'}
             </p>
+          </div>
+
+          {/* Filters */}
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Môn thể thao</label>
+                <select
+                  value={selectedSportType?.sportTypeId || ''}
+                  onChange={(e) => {
+                    const sportType = sportTypes.find(st => st.sportTypeId === parseInt(e.target.value));
+                    setSelectedSportType(sportType);
+                  }}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {sportTypes.map((sport) => (
+                    <option key={sport.sportTypeId} value={sport.sportTypeId}>
+                      {sport.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Ngày</label>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Tier</label>
+                <select
+                  value={selectedTier}
+                  onChange={(e) => setSelectedTier(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="Normal">Normal</option>
+                  <option value="Premium">Premium</option>
+                  <option value="VIP">VIP</option>
+                </select>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Step 1: Field Selection */}
+      {/* Step 1: Facility Selection */}
       {bookingStep === 1 && (
         <motion.div
-          ref={fieldsRef}
+          ref={facilitiesRef}
           initial={{ opacity: 0, y: 50 }}
-          animate={fieldsVisible ? { opacity: 1, y: 0 } : {}}
+          animate={facilitiesVisible ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
           className="w-full px-4 sm:px-6 lg:px-8 pb-16"
         >
           <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {fieldTypes.map((field, index) => (
-                <motion.div
-                  key={field.id}
-                  initial={{ opacity: 0, y: 50 }}
-                  animate={fieldsVisible ? { opacity: 1, y: 0 } : {}}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  className={`relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer ${
-                    !field.available ? 'opacity-60' : 'hover:scale-105'
-                  }`}
-                  onClick={() => field.available && handleFieldSelect(field)}
-                >
-                  {!field.available && (
-                    <div className="absolute inset-0 bg-black/50 z-10 flex items-center justify-center">
-                      <span className="bg-red-500 text-white px-4 py-2 rounded-lg font-bold">
-                        Tạm Ngừng
-                      </span>
-                    </div>
-                  )}
-                  
-                  <div className="p-6">
-                    <div className="text-center mb-4">
-                      <div className="text-6xl mb-4">{field.image}</div>
-                      <h3 className="text-xl font-bold text-gray-800 mb-2">{field.name}</h3>
-                      <p className="text-gray-600 text-sm leading-relaxed">{field.description}</p>
-                    </div>
-                    
-                    <div className="space-y-3 mb-6">
-                      <div className="flex items-center justify-between">
-                        <span className="text-2xl font-bold text-green-600">{field.price}</span>
-                        <div className="flex items-center space-x-1">
-                          <span className="text-yellow-500">⭐</span>
-                          <span className="text-sm text-gray-600">{field.rating} ({field.reviews})</span>
+            {/* Loading State */}
+            {facilitiesLoading && (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <p className="mt-4 text-lg text-gray-600">Đang tải danh sách cơ sở...</p>
+              </div>
+            )}
+
+            {/* Error State */}
+            {facilitiesError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-8">
+                <div className="flex items-center">
+                  <svg className="w-6 h-6 text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-lg text-red-700">{facilitiesError}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Facilities Grid */}
+            {!facilitiesLoading && !facilitiesError && facilities.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {facilities.map((facility, index) => (
+                  <motion.div
+                    key={facility.facilityId}
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={facilitiesVisible ? { opacity: 1, y: 0 } : {}}
+                    transition={{ duration: 0.6, delay: index * 0.1 }}
+                    className="relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer hover:scale-105"
+                    onClick={() => handleFacilitySelect(facility)}
+                  >
+                    <div className="p-6">
+                      <div className="text-center mb-4">
+                        <div className="text-6xl mb-4">🏟️</div>
+                        <h3 className="text-xl font-bold text-gray-800 mb-2">{facility.facilityName}</h3>
+                        <p className="text-gray-600 text-sm leading-relaxed">{facility.fullAddress}</p>
+                      </div>
+                      
+                      {facility.recommended && (
+                        <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-4 mb-4">
+                          <h4 className="font-semibold text-gray-800 mb-2">Sân được đề xuất:</h4>
+                          <div className="text-sm">
+                            <p className="font-medium">{facility.recommended.courtName}</p>
+                            <p className="text-green-600 font-semibold">
+                              {facility.recommended.priceFrom?.toLocaleString('vi-VN')} VNĐ/giờ
+                            </p>
+                            <p className="text-gray-600">
+                              {facility.recommended.firstStart && facility.recommended.firstEnd && 
+                                `${facility.recommended.firstStart.split('T')[1].substring(0,5)} - ${facility.recommended.firstEnd.split('T')[1].substring(0,5)}`
+                              }
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <h4 className="font-semibold text-gray-800">Tiện ích:</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {field.features.map((feature, idx) => (
-                          <span key={idx} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                            {feature}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    {field.available && (
+                      )}
+                      
                       <motion.button
                         className="w-full mt-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
-                        Chọn Sân Này
+                        Chọn Cơ Sở Này
                       </motion.button>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+
+            {/* No Facilities */}
+            {!facilitiesLoading && !facilitiesError && facilities.length === 0 && (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">🔍</div>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Không tìm thấy cơ sở nào</h3>
+                <p className="text-gray-600">Vui lòng thử lại với bộ lọc khác</p>
+              </div>
+            )}
           </div>
         </motion.div>
       )}
 
-      {/* Step 2: Time Selection */}
+      {/* Step 2: Court Selection */}
       {bookingStep === 2 && (
         <motion.div
+          ref={courtsRef}
           initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
+          animate={courtsVisible ? { opacity: 1, x: 0 } : {}}
           transition={{ duration: 0.6 }}
           className="w-full px-4 sm:px-6 lg:px-8 pb-16"
         >
           <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-lg p-8">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Selected Field Info */}
+            <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+              <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="text-2xl font-bold text-gray-800 mb-4">Sân Đã Chọn</h3>
-                  <div className="bg-gray-50 rounded-xl p-6">
-                    <div className="flex items-center space-x-4 mb-4">
-                      <div className="text-4xl">{selectedField?.image}</div>
-                      <div>
-                        <h4 className="text-xl font-bold text-gray-800">{selectedField?.name}</h4>
-                        <p className="text-green-600 font-semibold">{selectedField?.price}</p>
-                      </div>
-                    </div>
-                    <p className="text-gray-600 mb-4">{selectedField?.description}</p>
-                    <div className="flex items-center space-x-1">
-                      <span className="text-yellow-500">⭐</span>
-                      <span className="text-sm text-gray-600">{selectedField?.rating} ({selectedField?.reviews} đánh giá)</span>
+                  <h3 className="text-2xl font-bold text-gray-800 mb-2">Cơ Sở Đã Chọn</h3>
+                  <div className="flex items-center space-x-4">
+                    <div className="text-4xl">🏟️</div>
+                    <div>
+                      <h4 className="text-xl font-bold text-gray-800">{selectedFacility?.facilityName}</h4>
+                      <p className="text-gray-600">{selectedFacility?.fullAddress}</p>
                     </div>
                   </div>
                 </div>
-
-                {/* Date and Time Selection */}
-                <div>
-                  <h3 className="text-2xl font-bold text-gray-800 mb-4">Chọn Thời Gian</h3>
-                  
-                  <div className="space-y-6">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Chọn Ngày</label>
-                      <input
-                        type="date"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        min={new Date().toISOString().split('T')[0]}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Chọn Giờ</label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {timeSlots.map((time) => (
-                          <motion.button
-                            key={time}
-                            className={`py-2 px-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                              selectedTime === time
-                                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                            onClick={() => setSelectedTime(time)}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                          >
-                            {time}
-                          </motion.button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex space-x-4 mt-8">
-                    <motion.button
-                      onClick={() => setBookingStep(1)}
-                      className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-all duration-300"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      Quay Lại
-                    </motion.button>
-                    <motion.button
-                      onClick={() => setBookingStep(3)}
-                      disabled={!selectedDate || !selectedTime}
-                      className={`flex-1 py-3 rounded-xl font-semibold transition-all duration-300 ${
-                        selectedDate && selectedTime
-                          ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700'
-                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      }`}
-                      whileHover={selectedDate && selectedTime ? { scale: 1.02 } : {}}
-                      whileTap={selectedDate && selectedTime ? { scale: 0.98 } : {}}
-                    >
-                      Tiếp Tục
-                    </motion.button>
-                  </div>
-                </div>
+                <button
+                  onClick={goBack}
+                  className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-all duration-300"
+                >
+                  ← Quay lại
+                </button>
               </div>
             </div>
+
+            {/* Loading State */}
+            {courtsLoading && (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <p className="mt-4 text-lg text-gray-600">Đang tải danh sách sân...</p>
+              </div>
+            )}
+
+            {/* Error State */}
+            {courtsError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-8">
+                <div className="flex items-center">
+                  <svg className="w-6 h-6 text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-lg text-red-700">{courtsError}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Courts Grid */}
+            {!courtsLoading && !courtsError && courts.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {courts.map((court, index) => (
+                  <motion.div
+                    key={court.courtId}
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={courtsVisible ? { opacity: 1, y: 0 } : {}}
+                    transition={{ duration: 0.6, delay: index * 0.1 }}
+                    className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden group cursor-pointer hover:scale-105"
+                    onClick={() => handleCourtSelect(court)}
+                  >
+                    <div className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="text-4xl">⚽</div>
+                          <div>
+                            <h3 className="text-lg font-bold text-gray-800">{court.name}</h3>
+                            <p className="text-gray-600 text-sm">{court.courtType}</p>
+                          </div>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          court.isActive 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {court.isActive ? '🟢 Hoạt động' : '🔴 Tạm ngưng'}
+                        </span>
+                      </div>
+                      
+                      <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-4 py-3 rounded-lg mb-4">
+                        <div className="text-lg font-bold">
+                          {court.defaultPrice?.toLocaleString('vi-VN')} VNĐ
+                        </div>
+                        <div className="text-sm opacity-90">Giá/giờ</div>
+                      </div>
+                      
+                      <motion.button
+                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        Chọn Sân Này
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+
+            {/* No Courts */}
+            {!courtsLoading && !courtsError && courts.length === 0 && (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">🏟️</div>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Không có sân nào</h3>
+                <p className="text-gray-600">Cơ sở này không có sân phù hợp</p>
+              </div>
+            )}
           </div>
         </motion.div>
       )}
 
-      {/* Step 3: Confirmation */}
+      {/* Step 3: Slot Selection */}
       {bookingStep === 3 && (
         <motion.div
+          ref={slotsRef}
           initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
+          animate={slotsVisible ? { opacity: 1, x: 0 } : {}}
           transition={{ duration: 0.6 }}
           className="w-full px-4 sm:px-6 lg:px-8 pb-16"
         >
           <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-lg p-8">
-              <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">Xác Nhận Đặt Sân</h3>
-              
-              <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="text-center">
-                    <div className="text-4xl mb-2">{selectedField?.image}</div>
-                    <h4 className="font-bold text-gray-800">{selectedField?.name}</h4>
-                    <p className="text-green-600 font-semibold">{selectedField?.price}</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-4xl mb-2">📅</div>
-                    <h4 className="font-bold text-gray-800">Ngày</h4>
-                    <p className="text-gray-600">{new Date(selectedDate).toLocaleDateString('vi-VN')}</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-4xl mb-2">🕐</div>
-                    <h4 className="font-bold text-gray-800">Giờ</h4>
-                    <p className="text-gray-600">{selectedTime}</p>
+            <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-800 mb-2">Sân Đã Chọn</h3>
+                  <div className="flex items-center space-x-4">
+                    <div className="text-4xl">⚽</div>
+                    <div>
+                      <h4 className="text-xl font-bold text-gray-800">{selectedCourt?.name}</h4>
+                      <p className="text-gray-600">{selectedCourt?.courtType} - {selectedFacility?.facilityName}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              <div className="bg-gray-50 rounded-xl p-6 mb-6">
-                <h4 className="font-bold text-gray-800 mb-4">Tổng Thanh Toán</h4>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>Giá sân ({selectedField?.name})</span>
-                    <span>{selectedField?.price}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Phí dịch vụ</span>
-                    <span>20,000 VNĐ</span>
-                  </div>
-                  <hr className="my-2" />
-                  <div className="flex justify-between font-bold text-lg">
-                    <span>Tổng cộng</span>
-                    <span className="text-green-600">220,000 VNĐ</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex space-x-4">
-                <motion.button
-                  onClick={() => setBookingStep(2)}
-                  className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-all duration-300"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                <button
+                  onClick={goBack}
+                  className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-all duration-300"
                 >
-                  Quay Lại
-                </motion.button>
-                <motion.button
-                  onClick={handleBookingConfirm}
-                  className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 text-white py-3 rounded-xl font-semibold hover:from-green-700 hover:to-blue-700 transition-all duration-300"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  Xác Nhận Đặt Sân
-                </motion.button>
+                  ← Quay lại
+                </button>
               </div>
             </div>
-          </div>
-        </motion.div>
-      )}
 
-      {/* Success Message */}
-      {bookingStep === 3 && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-        >
-          <div className="bg-white rounded-2xl p-8 max-w-md mx-4 text-center">
-            <div className="text-6xl mb-4">✅</div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-4">Đặt Sân Thành Công!</h3>
-            <p className="text-gray-600 mb-6">
-              Cảm ơn bạn đã đặt sân. Chúng tôi sẽ gửi thông tin chi tiết qua email.
-            </p>
-            <motion.button
-              onClick={resetBooking}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Đặt Sân Khác
-            </motion.button>
+            {/* Loading State */}
+            {slotsLoading && (
+              <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <p className="mt-4 text-lg text-gray-600">Đang tải danh sách slot...</p>
+              </div>
+            )}
+
+            {/* Error State */}
+            {slotsError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-8">
+                <div className="flex items-center">
+                  <svg className="w-6 h-6 text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-lg text-red-700">{slotsError}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Slots Grid */}
+            {!slotsLoading && !slotsError && slots.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {slots.map((slot, index) => (
+                  <motion.div
+                    key={slot.slotId}
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={slotsVisible ? { opacity: 1, y: 0 } : {}}
+                    transition={{ duration: 0.6, delay: index * 0.1 }}
+                    className={`rounded-xl p-6 border-2 transition-all duration-300 cursor-pointer ${
+                      slot.isBooked 
+                        ? 'bg-red-50 border-red-200 cursor-not-allowed opacity-60' 
+                        : 'bg-green-50 border-green-200 hover:bg-green-100 hover:shadow-lg hover:scale-105'
+                    }`}
+                    onClick={() => handleSlotSelect(slot)}
+                  >
+                    <div className="text-center">
+                      <div className="text-3xl mb-3">🕐</div>
+                      <h3 className="text-lg font-bold text-gray-800 mb-2">
+                        {slot.startTime} - {slot.endTime}
+                      </h3>
+                      <div className="space-y-2">
+                        <div className="text-sm text-gray-600">
+                          Tier: <span className="font-semibold">{slot.tier}</span>
+                        </div>
+                        <div className="text-lg font-bold text-green-600">
+                          {slot.price?.toLocaleString('vi-VN')} VNĐ
+                        </div>
+                        <div className={`text-sm font-medium ${
+                          slot.isBooked ? 'text-red-600' : 'text-green-600'
+                        }`}>
+                          {slot.isBooked ? '❌ Đã đặt' : '✅ Có thể đặt'}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+
+            {/* No Slots */}
+            {!slotsLoading && !slotsError && slots.length === 0 && (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">🕐</div>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Không có slot nào</h3>
+                <p className="text-gray-600">Không có slot trống trong ngày này</p>
+              </div>
+            )}
           </div>
         </motion.div>
       )}
