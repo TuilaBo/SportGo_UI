@@ -18,6 +18,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [refreshTokenInterval, setRefreshTokenInterval] = useState(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const login = useCallback(async (userData) => {
     setIsLoggedIn(true);
@@ -175,6 +176,7 @@ export const AuthProvider = ({ children }) => {
   }, [refreshTokenInterval]);
 
   const logout = useCallback(async () => {
+    setIsLoggingOut(true);
     const refreshToken = localStorage.getItem('refreshToken') || (user && user.refreshToken);
     try {
       if (refreshToken) {
@@ -190,14 +192,23 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       
-      // Stop refresh token interval
-      stopRefreshTokenInterval();
+      // Stop refresh token interval directly
+      if (refreshTokenInterval) {
+        clearInterval(refreshTokenInterval);
+        setRefreshTokenInterval(null);
+      }
       
+      setIsLoggingOut(false);
       // Don't redirect here - let components handle navigation
     }
-  }, [user, stopRefreshTokenInterval]);
+  }, [user, refreshTokenInterval]);
 
   const checkAuth = useCallback(async () => {
+    if (isLoggingOut) {
+      setIsAuthLoading(false);
+      return;
+    }
+    
     setIsAuthLoading(true);
     const savedUser = localStorage.getItem('user');
     const accessToken = localStorage.getItem('accessToken');
@@ -291,7 +302,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
     }
     setIsAuthLoading(false);
-  }, []);
+  }, [isLoggingOut]);
 
   const value = useMemo(() => ({
     isLoggedIn,

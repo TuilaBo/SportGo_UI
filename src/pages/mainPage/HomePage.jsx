@@ -21,12 +21,7 @@ const HomePage = () => {
   return (
     <div className="min-h-screen bg-white w-full overflow-x-hidden">
       {/* Manager Bar */}
-      <ManagerBar 
-        isLoggedIn={isLoggedIn}
-        userName={user?.name}
-        userAvatar={user?.avatar}
-        onLogout={logout}
-      />
+      <ManagerBar />
 
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden w-full">

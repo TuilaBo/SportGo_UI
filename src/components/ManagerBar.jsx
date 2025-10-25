@@ -5,18 +5,19 @@ import logo from '../assets/logo.jpg';
 import { useAuth } from '../contexts/AuthContext';
 import { generateUserAvatar } from '../utils/avatarGenerator';
 
-const ManagerBar = ({ isLoggedIn = false, userName = null, userAvatar = null, onLogin, onLogout }) => {
+const ManagerBar = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, logout } = useAuth();
   
-  // Use auth context data if available, otherwise fall back to props
-  const currentUser = user || { name: userName, avatar: userAvatar };
-  const isUserLoggedIn = user ? true : isLoggedIn;
-  const handleLogout = onLogout || logout;
+  // Use only auth context data
+  const isUserLoggedIn = !!user;
+  const handleLogout = async () => {
+    await logout();
+  };
   
   // Generate avatar if not provided
-  const userAvatarUrl = currentUser.avatar || generateUserAvatar(currentUser.name, currentUser.email);
+  const userAvatarUrl = user?.avatar || generateUserAvatar(user?.fullName || user?.name, user?.email);
   
   const isActive = (path) => {
     return location.pathname === path;
@@ -127,7 +128,7 @@ const ManagerBar = ({ isLoggedIn = false, userName = null, userAvatar = null, on
                   whileHover={{ scale: 1.05 }}
                   transition={{ duration: 0.2 }}
                 >
-                  {currentUser.fullName || currentUser.name || 'User'}
+                  {user?.fullName || user?.name || 'User'}
                 </motion.span>
                 
                 <motion.div 

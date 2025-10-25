@@ -9,9 +9,11 @@ import ResetPasswordPage from './pages/mainPage/ResetPasswordPage';
 import ProviderProfilePage from './pages/mainPage/ProviderProfilePage';
 import PackagePaymentPage from './pages/mainPage/PackagePaymentPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminStatsPage from './pages/admin/AdminStatsPage';
 import UsersManagePage from './pages/admin/UsersManagePage';
 import PackagesManagePage from './pages/admin/PackagesManagePage';
 import BusinessDashboard from './pages/doanhNghiep/BusinessDashboard';
+import BusinessStatsPage from './pages/doanhNghiep/BusinessStatsPage';
 import CourtsPage from './pages/doanhNghiep/CourtsPage';
 import FacilitiesPage from './pages/doanhNghiep/FacilitiesPage';
 import { AuthProvider } from './contexts/AuthContext';
@@ -68,6 +70,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/stats"
+            element={
+              <ProtectedRoute roles={["Admin"]}>
+                <AdminStatsPage />
+              </ProtectedRoute>
+            }
+          />
           {/* Doanh nghiệp routes */}
           <Route
             path="/doanh-nghiep"
@@ -90,6 +100,14 @@ function App() {
             element={
               <ProtectedRoute roles={["Provider"]}>
                 <FacilitiesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/doanh-nghiep/stats"
+            element={
+              <ProtectedRoute roles={["Provider"]}>
+                <BusinessStatsPage />
               </ProtectedRoute>
             }
           />

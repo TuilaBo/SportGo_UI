@@ -83,8 +83,18 @@ const LoginPage = () => {
       // Update auth context (this will automatically fetch complete user info from API)
       await login(userData);
       
-      // Navigate immediately after successful login
-      navigate('/');
+      // Auto-redirect based on user role
+      // Note: We need to wait a bit for the user role to be fetched from API
+      setTimeout(() => {
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        if (currentUser.role === 'Admin') {
+          navigate('/admin');
+        } else if (currentUser.role === 'Provider') {
+          navigate('/doanh-nghiep');
+        } else {
+          navigate('/');
+        }
+      }, 500);
       
     } catch (error) {
       setError(error.message || 'Đăng nhập thất bại. Vui lòng thử lại.');
