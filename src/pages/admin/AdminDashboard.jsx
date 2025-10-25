@@ -246,6 +246,7 @@ export default function AdminDashboard() {
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">Bảng điều khiển quản trị</h1>
           <p className="text-sm text-gray-600 mt-1">Theo dõi hoạt động và duyệt hồ sơ nhà cung cấp nhanh chóng.</p>
           <div className="mt-4 flex items-center gap-3 text-sm">
+            <a href="/admin/stats" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white shadow hover:shadow-md hover:brightness-110 transition">📊 Thống Kê</a>
             <a href="#providers" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white shadow hover:shadow-md hover:brightness-110 transition">Xem hồ sơ chờ duyệt</a>
             <a href="#activities" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-indigo-200 text-indigo-700 bg-white/60 backdrop-blur hover:bg-white transition">Hoạt động gần đây</a>
           </div>
