@@ -246,12 +246,13 @@ export default function SalePackages() {
       const status = await res.text();
       setPaymentStatus(status);
       
-      // If payment is successful, load user packages and close modal
-      if (status === 'Success' || status === 'Completed') {
+      // If payment is successful, load user packages and redirect to my-packages
+      if (status === 'Success' || status === 'Completed' || status === 'Recognized' || status === 'Paid') {
         await loadUserPackages();
         setTimeout(() => {
           closeCheckoutModal();
           alert('Thanh toán thành công! Gói dịch vụ đã được kích hoạt.');
+          navigate('/my-packages');
         }, 2000);
       }
       
@@ -488,74 +489,6 @@ export default function SalePackages() {
             <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có gói ưu đãi</h3>
             <p className="text-gray-600">Hãy quay lại sau để xem các gói ưu đãi mới</p>
           </div>
-        )}
-
-        {/* User Packages Section */}
-        {user && userPackages.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="mt-16"
-          >
-            <div className="text-center mb-8">
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                Gói dịch vụ của bạn
-              </h3>
-              <p className="text-gray-600">
-                Các gói dịch vụ đang hoạt động trong tài khoản của bạn
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {userPackages.map((userPackage, index) => (
-                <motion.div
-                  key={userPackage.packageId}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  className="bg-white rounded-xl shadow-lg border border-gray-200 p-6"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-lg font-semibold text-gray-900">
-                      {userPackage.name}
-                    </h4>
-                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                      Hoạt động
-                    </span>
-                  </div>
-
-                  <div className="space-y-2 text-sm text-gray-600 mb-4">
-                    <div className="flex justify-between">
-                      <span>Thời hạn:</span>
-                      <span className="font-medium">{userPackage.durationDays} ngày</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Lượt bình thường:</span>
-                      <span className="font-medium text-blue-600">{userPackage.normalTurns}</span>
-                    </div>
-                    {userPackage.priorityTurns > 0 && (
-                      <div className="flex justify-between">
-                        <span>Lượt ưu tiên:</span>
-                        <span className="font-medium text-purple-600">{userPackage.priorityTurns}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span>Ngày mua:</span>
-                      <span className="font-medium">
-                        {new Date(userPackage.purchaseDate).toLocaleDateString('vi-VN')}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="text-xs text-gray-500 mb-1">Mô tả</div>
-                    <div className="text-sm text-gray-700">{userPackage.description}</div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
         )}
 
         {/* Call to Action */}
