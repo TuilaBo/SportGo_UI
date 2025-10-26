@@ -131,17 +131,24 @@ const ManagerBar = () => {
                   {user?.fullName || user?.name || 'User'}
                 </motion.span>
                 
-                <motion.div 
-                  className="relative group"
-                  whileHover={{ scale: 1.1 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <img 
-                    src={userAvatarUrl} 
-                    alt="User Avatar" 
-                    className="w-10 h-10 rounded-full border-2 border-blue-500 object-cover shadow-md group-hover:shadow-lg transition-shadow duration-300"
-                  />
-                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                <Link to="/profile">
+                  <motion.div 
+                    className="relative group cursor-pointer"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <img 
+                      src={userAvatarUrl} 
+                      alt="User Avatar" 
+                      className="w-10 h-10 rounded-full border-2 border-blue-500 object-cover shadow-md group-hover:shadow-lg transition-shadow duration-300"
+                    />
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                  </motion.div>
+                </Link>
+
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                
                 </motion.div>
                 
                 <motion.button 

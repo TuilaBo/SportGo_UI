@@ -8,6 +8,8 @@ import ForgotPasswordPage from './pages/mainPage/ForgotPasswordPage';
 import ResetPasswordPage from './pages/mainPage/ResetPasswordPage';
 import ProviderProfilePage from './pages/mainPage/ProviderProfilePage';
 import PackagePaymentPage from './pages/mainPage/PackagePaymentPage';
+import MyPackagesPage from './pages/mainPage/MyPackagesPage';
+import ProfilePage from './pages/mainPage/ProfilePage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminStatsPage from './pages/admin/AdminStatsPage';
 import UsersManagePage from './pages/admin/UsersManagePage';
@@ -37,6 +39,8 @@ function App() {
           <Route path="/provider-profile" element={<ProviderProfilePage />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/package-payment" element={<PackagePaymentPage />} />
+          <Route path="/my-packages" element={<MyPackagesPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
           {/* Admin routes */}
           <Route
             path="/admin"
