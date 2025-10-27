@@ -9,6 +9,7 @@ import ResetPasswordPage from './pages/mainPage/ResetPasswordPage';
 import ProviderProfilePage from './pages/mainPage/ProviderProfilePage';
 import PackagePaymentPage from './pages/mainPage/PackagePaymentPage';
 import MyPackagesPage from './pages/mainPage/MyPackagesPage';
+import MyBookingsPage from './pages/mainPage/MyBookingsPage';
 import ProfilePage from './pages/mainPage/ProfilePage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminStatsPage from './pages/admin/AdminStatsPage';
@@ -18,6 +19,7 @@ import BusinessDashboard from './pages/doanhNghiep/BusinessDashboard';
 import BusinessStatsPage from './pages/doanhNghiep/BusinessStatsPage';
 import CourtsPage from './pages/doanhNghiep/CourtsPage';
 import FacilitiesPage from './pages/doanhNghiep/FacilitiesPage';
+import BookingsManagePage from './pages/doanhNghiep/BookingsManagePage';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import SportTypesManagePage from './pages/admin/SportTypesManagePage';
@@ -40,6 +42,7 @@ function App() {
           <Route path="/search" element={<SearchPage />} />
           <Route path="/package-payment" element={<PackagePaymentPage />} />
           <Route path="/my-packages" element={<MyPackagesPage />} />
+          <Route path="/my-bookings" element={<MyBookingsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           {/* Admin routes */}
           <Route
@@ -104,6 +107,14 @@ function App() {
             element={
               <ProtectedRoute roles={["Provider"]}>
                 <FacilitiesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/doanh-nghiep/dat-san"
+            element={
+              <ProtectedRoute roles={["Provider"]}>
+                <BookingsManagePage />
               </ProtectedRoute>
             }
           />

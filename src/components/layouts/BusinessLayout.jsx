@@ -58,6 +58,12 @@ export default function BusinessLayout({ title = 'Doanh nghiệp', children }) {
               🏢 Quản lý chi nhánh
             </NavLink>
             <NavLink 
+              to="/doanh-nghiep/dat-san" 
+              className={({ isActive }) => `block px-3 py-2 rounded-lg text-sm transition-colors ${isActive ? 'bg-emerald-600 text-white shadow-md' : 'hover:bg-gray-100 text-gray-700'}`}
+            >
+              📅 Quản lý đặt sân
+            </NavLink>
+            <NavLink 
               to="/doanh-nghiep/stats" 
               className={({ isActive }) => `block px-3 py-2 rounded-lg text-sm transition-colors ${isActive ? 'bg-emerald-600 text-white shadow-md' : 'hover:bg-gray-100 text-gray-700'}`}
             >
