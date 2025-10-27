@@ -259,12 +259,19 @@ const ProfilePage = () => {
                 Hành động
               </h2>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <button
                   onClick={() => navigate('/my-packages')}
                   className="px-6 py-3 border-2 border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium"
                 >
                   📦 Gói của tôi
+                </button>
+                
+                <button
+                  onClick={() => navigate('/my-bookings')}
+                  className="px-6 py-3 border-2 border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition-colors font-medium"
+                >
+                  📅 Đặt sân của tôi
                 </button>
                 
                 <button

@@ -70,7 +70,8 @@ const ManagerBar = () => {
               { path: '/', label: 'Trang chủ', icon: '🏠' },
               { path: '/booking', label: 'Đặt sân', icon: '⚽' },
               { path: '/search', label: 'Tìm sân', icon: '🔍' },
-              { path: '/contact', label: 'Liên hệ', icon: '📞' }
+              { path: '/contact', label: 'Liên hệ', icon: '📞' },
+              { path: '/my-bookings', label: 'Đặt sân của tôi', icon: '📅' }
             ].map((item, index) => (
               <motion.div
                 key={item.path}
@@ -230,7 +231,8 @@ const ManagerBar = () => {
                   { path: '/', label: 'Trang chủ', icon: '🏠' },
                   { path: '/booking', label: 'Đặt sân', icon: '⚽' },
                   { path: '/search', label: 'Tìm sân', icon: '🔍' },
-                  { path: '/contact', label: 'Liên hệ', icon: '📞' }
+                  { path: '/contact', label: 'Liên hệ', icon: '📞' },
+                  { path: '/my-bookings', label: 'Đặt sân của tôi', icon: '📅' }
                 ].map((item, index) => (
                   <motion.div
                     key={item.path}

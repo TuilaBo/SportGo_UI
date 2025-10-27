@@ -206,17 +206,17 @@ const BookingPage = () => {
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
       // Call the actual booking API
-      const response = await fetch('/api/bookings', {
+      const response = await fetch('/api/Bookings', {
         method: 'POST',
         headers: {
-          'accept': 'application/json',
+          'accept': 'text/plain',
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${accessToken}`
         },
         body: JSON.stringify({
           courtId: selectedCourt.courtId,
           slotIds: [slot.slotId],
-          bookingType: "123"
+          bookingType: selectedTier
         })
       });
 
@@ -228,12 +228,13 @@ const BookingPage = () => {
       const bookingResult = await response.json();
       
       // Show success message
-      alert(`🎉 Đặt sân thành công!\n\n` +
+      alert(`Đặt sân thành công!\n\n` +
         `Sân: ${selectedCourt.name}\n` +
         `Cơ sở: ${selectedFacility?.facilityName}\n` +
         `Thời gian: ${slot.startTime} - ${slot.endTime}\n` +
         `Ngày: ${selectedDate}\n` +
-        `Giá: ${slot.price?.toLocaleString('vi-VN')} VNĐ\n` +
+        `Giá: ${bookingResult.totalAmount?.toLocaleString('vi-VN')} VNĐ\n` +
+        `Trạng thái: ${bookingResult.status}\n` +
         `Mã đặt sân: ${bookingResult.bookingId || 'N/A'}`);
       
       // Reset booking flow
@@ -416,9 +417,9 @@ const BookingPage = () => {
                   </svg>
                   <span className="text-lg text-red-700">{facilitiesError}</span>
                 </div>
-              </div>
-            )}
-
+                    </div>
+                  )}
+                  
             {/* Facilities Grid */}
             {!facilitiesLoading && !facilitiesError && facilities.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -431,13 +432,13 @@ const BookingPage = () => {
                     className="relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer hover:scale-105"
                     onClick={() => handleFacilitySelect(facility)}
                   >
-                    <div className="p-6">
-                      <div className="text-center mb-4">
+                  <div className="p-6">
+                    <div className="text-center mb-4">
                         <div className="text-6xl mb-4">🏟️</div>
                         <h3 className="text-xl font-bold text-gray-800 mb-2">{facility.facilityName}</h3>
                         <p className="text-gray-600 text-sm leading-relaxed">{facility.fullAddress}</p>
-                      </div>
-                      
+                    </div>
+                    
                       {facility.recommended && (
                         <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-4 mb-4">
                           <h4 className="font-semibold text-gray-800 mb-2">Sân được đề xuất:</h4>
@@ -451,10 +452,10 @@ const BookingPage = () => {
                                 `${facility.recommended.firstStart.split('T')[1].substring(0,5)} - ${facility.recommended.firstEnd.split('T')[1].substring(0,5)}`
                               }
                             </p>
-                          </div>
-                        </div>
+                      </div>
+                    </div>
                       )}
-                      
+                    
                       <motion.button
                         className="w-full mt-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300"
                         whileHover={{ scale: 1.02 }}
@@ -462,10 +463,10 @@ const BookingPage = () => {
                       >
                         Chọn Cơ Sở Này
                       </motion.button>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
             )}
 
             {/* No Facilities */}
@@ -496,7 +497,7 @@ const BookingPage = () => {
                   <h3 className="text-2xl font-bold text-gray-800 mb-2">Cơ Sở Đã Chọn</h3>
                   <div className="flex items-center space-x-4">
                     <div className="text-4xl">🏟️</div>
-                    <div>
+                      <div>
                       <h4 className="text-xl font-bold text-gray-800">{selectedFacility?.facilityName}</h4>
                       <p className="text-gray-600">{selectedFacility?.fullAddress}</p>
                     </div>
@@ -508,8 +509,8 @@ const BookingPage = () => {
                 >
                   ← Quay lại
                 </button>
-              </div>
-            </div>
+                  </div>
+                </div>
 
             {/* Loading State */}
             {courtsLoading && (
@@ -528,7 +529,7 @@ const BookingPage = () => {
                   </svg>
                   <span className="text-lg text-red-700">{courtsError}</span>
                 </div>
-              </div>
+                    </div>
             )}
 
             {/* Courts Grid */}
@@ -547,7 +548,7 @@ const BookingPage = () => {
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center space-x-3">
                           <div className="text-4xl">⚽</div>
-                          <div>
+                    <div>
                             <h3 className="text-lg font-bold text-gray-800">{court.name}</h3>
                             <p className="text-gray-600 text-sm">{court.courtType}</p>
                           </div>
@@ -564,21 +565,21 @@ const BookingPage = () => {
                       <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-4 py-3 rounded-lg mb-4">
                         <div className="text-lg font-bold">
                           {court.defaultPrice?.toLocaleString('vi-VN')} VNĐ
-                        </div>
-                        <div className="text-sm opacity-90">Giá/giờ</div>
-                      </div>
-                      
-                      <motion.button
-                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        Chọn Sân Này
-                      </motion.button>
                     </div>
+                        <div className="text-sm opacity-90">Giá/giờ</div>
+                  </div>
+
+                    <motion.button
+                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                        Chọn Sân Này
+                    </motion.button>
+                  </div>
                   </motion.div>
                 ))}
-              </div>
+                </div>
             )}
 
             {/* No Courts */}
@@ -612,7 +613,7 @@ const BookingPage = () => {
                     <div>
                       <h4 className="text-xl font-bold text-gray-800">{selectedCourt?.name}</h4>
                       <p className="text-gray-600">{selectedCourt?.courtType} - {selectedFacility?.facilityName}</p>
-                    </div>
+                  </div>
                   </div>
                 </div>
                 <button
@@ -622,14 +623,14 @@ const BookingPage = () => {
                   ← Quay lại
                 </button>
               </div>
-            </div>
+                  </div>
 
             {/* Loading State */}
             {slotsLoading && (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                 <p className="mt-4 text-lg text-gray-600">Đang tải danh sách slot...</p>
-              </div>
+                  </div>
             )}
 
             {/* Error State */}
@@ -676,10 +677,10 @@ const BookingPage = () => {
                           slot.isBooked ? 'text-red-600' : 'text-green-600'
                         }`}>
                           {slot.isBooked ? '❌ Đã đặt' : '✅ Có thể đặt'}
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
                 ))}
               </div>
             )}
