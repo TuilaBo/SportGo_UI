@@ -7,6 +7,20 @@ import { useAuth } from '../../contexts/AuthContext';
 
 export default function BusinessDashboard() {
   const { user } = useAuth();
+  const toApiDate = (yyyyMmDd) => {
+    if (!yyyyMmDd) return '';
+    const [y, m, d] = yyyyMmDd.split('-');
+    return `${m}/${d}/${y}`; // MM/DD/YYYY
+  };
+  const today = new Date();
+  const tenDaysAgo = new Date();
+  tenDaysAgo.setDate(today.getDate() - 10);
+  const [fromDate, setFromDate] = useState(tenDaysAgo.toISOString().slice(0,10));
+  const [toDate, setToDate] = useState(today.toISOString().slice(0,10));
+  const [selectedFacilityIds, setSelectedFacilityIds] = useState([]);
+  const [overviewLoading, setOverviewLoading] = useState(false);
+  const [overviewError, setOverviewError] = useState(null);
+  const [overview, setOverview] = useState(null);
   const stats = {
     fields: 12,
     bookingsToday: 38,
@@ -79,7 +93,12 @@ export default function BusinessDashboard() {
         }
         const ct = res.headers.get('content-type') || '';
         const data = ct.includes('application/json') ? await res.json() : JSON.parse(await res.text());
-        setFacilities(Array.isArray(data.items) ? data.items : []);
+        const items = Array.isArray(data.items) ? data.items : [];
+        setFacilities(items);
+        // Initialize selection to the first facility if none selected
+        if (items.length > 0 && selectedFacilityIds.length === 0) {
+          setSelectedFacilityIds([items[0].facilityId]);
+        }
         setFacTotal(data.total || 0);
         setFacTotalPages(data.totalPages || 1);
       } catch (e) {
@@ -92,6 +111,48 @@ export default function BusinessDashboard() {
     loadFacilities();
     return () => controller.abort();
   }, [user, facPage, facSize, facReloadTick]);
+
+  // Load provider dashboard overview
+  useEffect(() => {
+    let cancelled = false;
+    const loadOverview = async () => {
+      try {
+        const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
+        if (!accessToken || selectedFacilityIds.length === 0) {
+          setOverview(null);
+          return;
+        }
+        setOverviewLoading(true);
+        setOverviewError(null);
+        const params = new URLSearchParams({
+          from: toApiDate(fromDate),
+          to: toApiDate(toDate),
+          facilityIds: selectedFacilityIds.join(',')
+        });
+        const res = await fetch(`/api/provider/dashboard/overview?${params.toString()}`, {
+          headers: {
+            'accept': 'application/json, text/plain',
+            'Authorization': `Bearer ${accessToken}`
+          }
+        });
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(txt || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        if (!cancelled) setOverview(data);
+      } catch (e) {
+        if (!cancelled) {
+          setOverviewError(e.message || String(e));
+          setOverview(null);
+        }
+      } finally {
+        if (!cancelled) setOverviewLoading(false);
+      }
+    };
+    loadOverview();
+    return () => { cancelled = true; };
+  }, [user, fromDate, toDate, selectedFacilityIds.join(',')]);
 
   // Load sport types on mount
   useEffect(() => {
@@ -387,20 +448,128 @@ export default function BusinessDashboard() {
   return (
     <BusinessLayout title="Tổng quan">
       <h1 className="text-xl font-semibold mb-4">Tổng quan doanh nghiệp</h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="rounded-lg border border-gray-200 p-4">
-          <div className="text-sm text-gray-500">Số sân</div>
-          <div className="text-2xl font-semibold">{stats.fields}</div>
+
+      {/* Filters for overview */}
+      <div className="mb-4 flex flex-col md:flex-row gap-3 items-start md:items-end">
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-600">Từ</label>
+          <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="border rounded px-2 py-1 text-sm" />
         </div>
-        <div className="rounded-lg border border-gray-200 p-4">
-          <div className="text-sm text-gray-500">Đặt sân hôm nay</div>
-          <div className="text-2xl font-semibold">{stats.bookingsToday}</div>
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-600">Đến</label>
+          <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="border rounded px-2 py-1 text-sm" />
         </div>
-        <div className="rounded-lg border border-gray-200 p-4">
-          <div className="text-sm text-gray-500">Doanh thu</div>
-          <div className="text-2xl font-semibold">{stats.revenue.toLocaleString('vi-VN')}₫</div>
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-600">Chi nhánh</label>
+          <select
+            multiple
+            value={selectedFacilityIds.map(String)}
+            onChange={(e) => {
+              const opts = Array.from(e.target.selectedOptions).map(o => Number(o.value));
+              setSelectedFacilityIds(opts);
+            }}
+            className="border rounded px-2 py-1 text-sm min-w-[220px] h-24"
+          >
+            {facilities.map(f => (
+              <option key={f.facilityId} value={f.facilityId}>{f.name}</option>
+            ))}
+          </select>
         </div>
       </div>
+
+      {/* Overview KPIs from API */}
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {overviewLoading && (
+          <div className="md:col-span-3 lg:col-span-4 text-gray-500">Đang tải tổng quan...</div>
+        )}
+        {overviewError && !overviewLoading && (
+          <div className="md:col-span-3 lg:col-span-4 text-red-600">{overviewError}</div>
+        )}
+        {overview && !overviewLoading && (
+          <>
+            <div className="rounded-lg border border-gray-200 p-4">
+              <div className="text-sm text-gray-500">Tổng lượt đặt</div>
+              <div className="text-2xl font-semibold">{(overview.totalBookings || 0).toLocaleString('vi-VN')}</div>
+            </div>
+            <div className="rounded-lg border border-gray-200 p-4">
+              <div className="text-sm text-gray-500">Doanh thu</div>
+              <div className="text-2xl font-semibold">{(overview.totalRevenue || 0).toLocaleString('vi-VN')}₫</div>
+            </div>
+            <div className="rounded-lg border border-gray-200 p-4">
+              <div className="text-sm text-gray-500">Tỉ lệ thành công</div>
+              <div className="text-2xl font-semibold">{Number(overview.successRate || 0)}%</div>
+            </div>
+            <div className="rounded-lg border border-gray-200 p-4">
+              <div className="text-sm text-gray-500">Tăng trưởng lượt đặt (%)</div>
+              <div className="text-2xl font-semibold">{Number(overview.bookingGrowth || 0)}%</div>
+            </div>
+            <div className="rounded-lg border border-gray-200 p-4">
+              <div className="text-sm text-gray-500">Đã hủy</div>
+              <div className="text-2xl font-semibold">{(overview.canceledBookings || 0).toLocaleString('vi-VN')}</div>
+            </div>
+            <div className="rounded-lg border border-gray-200 p-4">
+              <div className="text-sm text-gray-500">Giá trị TB</div>
+              <div className="text-2xl font-semibold">{(overview.averageOrderValue || 0).toLocaleString('vi-VN')}₫</div>
+            </div>
+            <div className="rounded-lg border border-gray-200 p-4">
+              <div className="text-sm text-gray-500">Tỉ lệ sử dụng</div>
+              <div className="text-2xl font-semibold">{Number(overview.utilizationRate || 0)}%</div>
+            </div>
+            <div className="rounded-lg border border-gray-200 p-4">
+              <div className="text-sm text-gray-500">Chờ thanh toán</div>
+              <div className="text-2xl font-semibold">{(overview.pendingPayments || 0).toLocaleString('vi-VN')}</div>
+            </div>
+            <div className="rounded-lg border border-gray-200 p-4">
+              <div className="text-sm text-gray-500">Đặt cọc đã trả</div>
+              <div className="text-2xl font-semibold">{(overview.depositPaidBookings || 0).toLocaleString('vi-VN')}</div>
+            </div>
+            <div className="rounded-lg border border-gray-200 p-4">
+              <div className="text-sm text-gray-500">Thanh toán đủ</div>
+              <div className="text-2xl font-semibold">{(overview.fullyPaidBookings || 0).toLocaleString('vi-VN')}</div>
+            </div>
+            <div className="rounded-lg border border-gray-200 p-4">
+              <div className="text-sm text-gray-500">Cọc đã thu</div>
+              <div className="text-2xl font-semibold">{(overview.totalDepositsCollected || 0).toLocaleString('vi-VN')}₫</div>
+            </div>
+            <div className="rounded-lg border border-gray-200 p-4">
+              <div className="text-sm text-gray-500">Đang nợ</div>
+              <div className="text-2xl font-semibold">{(overview.totalOutstanding || 0).toLocaleString('vi-VN')}₫</div>
+            </div>
+            <div className="md:col-span-3 lg:col-span-4 text-sm text-gray-600">
+              Khoảng thời gian: {overview.periodFrom ? new Date(overview.periodFrom).toLocaleDateString('vi-VN') : fromDate} → {overview.periodTo ? new Date(overview.periodTo).toLocaleDateString('vi-VN') : toDate}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Top Courts */}
+      {overview && overview.topCourts && overview.topCourts.length > 0 && (
+        <div className="mt-6">
+          <h2 className="text-base font-semibold mb-3">Top sân theo lượt đặt</h2>
+          <div className="overflow-x-auto border border-gray-200 rounded-xl">
+            <table className="min-w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="text-left px-4 py-2">#</th>
+                  <th className="text-left px-4 py-2">Sân</th>
+                  <th className="text-left px-4 py-2">Mã sân</th>
+                  <th className="text-left px-4 py-2">Lượt đặt</th>
+                </tr>
+              </thead>
+              <tbody>
+                {overview.topCourts.map((c, idx) => (
+                  <tr key={c.courtId} className="border-t">
+                    <td className="px-4 py-2">{idx + 1}</td>
+                    <td className="px-4 py-2">{c.courtName}</td>
+                    <td className="px-4 py-2">{c.courtId}</td>
+                    <td className="px-4 py-2">{(c.bookings || 0).toLocaleString('vi-VN')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
       <div className="mt-8">
         <h2 className="text-base font-semibold mb-3">Tạo chi nhánh (Facility)</h2>
         <form onSubmit={createFacility} className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white border border-gray-200 rounded-xl p-4">

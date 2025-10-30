@@ -6,6 +6,7 @@ export default function SearchFacilities() {
   const { user } = useAuth();
   const [sportTypes, setSportTypes] = useState([]);
   const [searchForm, setSearchForm] = useState({
+    q: '',
     sportTypeId: 1,
     date: new Date().toISOString().split('T')[0],
     start: '08:00',
@@ -76,6 +77,12 @@ export default function SearchFacilities() {
     }
   }, [user]);
 
+  const toApiDate = (yyyyMmDd) => {
+    if (!yyyyMmDd) return '';
+    const [y, m, d] = yyyyMmDd.split('-');
+    return `${m}/${d}/${y}`; // MM/DD/YYYY
+  };
+
   // Search facilities
   const searchFacilities = async () => {
     try {
@@ -84,10 +91,9 @@ export default function SearchFacilities() {
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
       const params = new URLSearchParams({
+        q: searchForm.q || '',
         sportTypeId: searchForm.sportTypeId.toString(),
-        date: searchForm.date,
-        start: searchForm.start + ':00',
-        end: searchForm.end + ':00',
+        date: toApiDate(searchForm.date),
         tier: searchForm.tier,
         page: '1',
         size: '10'
@@ -491,7 +497,7 @@ export default function SearchFacilities() {
                           <div>
                             <span className="text-gray-600">Thời gian:</span>
                             <div className="font-medium">
-                              {formatTime(facility.recommended.firstStart)} - {formatTime(facility.recommended.firstEnd)}
+                              {formatTime(facility.recommended.firstAvailableStart)} - {formatTime(facility.recommended.firstAvailableEnd)}
                             </div>
                           </div>
                           <div>
