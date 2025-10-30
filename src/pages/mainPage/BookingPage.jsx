@@ -37,6 +37,11 @@ const BookingPage = () => {
   // Date selection
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedTier, setSelectedTier] = useState('Normal');
+  const toApiDate = (yyyyMmDd) => {
+    if (!yyyyMmDd) return '';
+    const [y, m, d] = yyyyMmDd.split('-');
+    return `${m}/${d}/${y}`; // MM/DD/YYYY
+  };
 
   const [facilitiesRef, facilitiesVisible] = useScrollAnimation(0.1);
   const [courtsRef, courtsVisible] = useScrollAnimation(0.1);
@@ -84,7 +89,8 @@ const BookingPage = () => {
       setFacilitiesError(null);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
-      const res = await fetch(`/api/search/facilities?sportTypeId=${selectedSportType.sportTypeId}&date=${selectedDate}&start=08:00:00&end=22:00:00&tier=${selectedTier}&page=1&size=20`, {
+      const apiDate = encodeURIComponent(toApiDate(selectedDate));
+      const res = await fetch(`/api/search/facilities?sportTypeId=${selectedSportType.sportTypeId}&date=${apiDate}&tier=${selectedTier}&page=1&size=20&q=`, {
         method: 'GET',
         headers: {
           'accept': 'application/json',
@@ -448,8 +454,8 @@ const BookingPage = () => {
                               {facility.recommended.priceFrom?.toLocaleString('vi-VN')} VNĐ/giờ
                             </p>
                             <p className="text-gray-600">
-                              {facility.recommended.firstStart && facility.recommended.firstEnd && 
-                                `${facility.recommended.firstStart.split('T')[1].substring(0,5)} - ${facility.recommended.firstEnd.split('T')[1].substring(0,5)}`
+                              {facility.recommended.firstAvailableStart && facility.recommended.firstAvailableEnd && 
+                                `${facility.recommended.firstAvailableStart.split('T')[1].substring(0,5)} - ${facility.recommended.firstAvailableEnd.split('T')[1].substring(0,5)}`
                               }
                             </p>
                       </div>
