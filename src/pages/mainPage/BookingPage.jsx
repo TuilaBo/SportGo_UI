@@ -5,6 +5,7 @@ import ManagerBar from '../../components/ManagerBar';
 import Footer from '../../components/Footer';
 import { useAuth } from '../../contexts/AuthContext';
 import GoogleMapEmbed from '../../components/GoogleMapEmbed';
+import BookingPaymentModal from '../../components/BookingPaymentModal';
 
 const BookingPage = () => {
   const { isLoggedIn, user, logout } = useAuth();
@@ -46,6 +47,10 @@ const BookingPage = () => {
   const [facilitiesRef, facilitiesVisible] = useScrollAnimation(0.1);
   const [courtsRef, courtsVisible] = useScrollAnimation(0.1);
   const [slotsRef, slotsVisible] = useScrollAnimation(0.1);
+  
+  // Payment modal state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [pendingBookingId, setPendingBookingId] = useState(null);
 
   // Load sport types
   useEffect(() => {
@@ -233,18 +238,24 @@ const BookingPage = () => {
 
       const bookingResult = await response.json();
       
-      // Show success message
-      alert(`Đặt sân thành công!\n\n` +
-        `Sân: ${selectedCourt.name}\n` +
-        `Cơ sở: ${selectedFacility?.facilityName}\n` +
-        `Thời gian: ${slot.startTime} - ${slot.endTime}\n` +
-        `Ngày: ${selectedDate}\n` +
-        `Giá: ${bookingResult.totalAmount?.toLocaleString('vi-VN')} VNĐ\n` +
-        `Trạng thái: ${bookingResult.status}\n` +
-        `Mã đặt sân: ${bookingResult.bookingId || 'N/A'}`);
-      
-      // Reset booking flow
-      resetBooking();
+      // If booking is Pending, show payment modal for deposit
+      if (bookingResult.status === 'Pending' && bookingResult.bookingId) {
+        setPendingBookingId(bookingResult.bookingId);
+        setShowPaymentModal(true);
+      } else {
+        // Show success message
+        alert(`Đặt sân thành công!\n\n` +
+          `Sân: ${selectedCourt.name}\n` +
+          `Cơ sở: ${selectedFacility?.facilityName}\n` +
+          `Thời gian: ${slot.startTime} - ${slot.endTime}\n` +
+          `Ngày: ${selectedDate}\n` +
+          `Giá: ${bookingResult.totalAmount?.toLocaleString('vi-VN')} VNĐ\n` +
+          `Trạng thái: ${bookingResult.status}\n` +
+          `Mã đặt sân: ${bookingResult.bookingId || 'N/A'}`);
+        
+        // Reset booking flow
+        resetBooking();
+      }
       
     } catch (error) {
       console.error('Booking failed:', error);
@@ -705,6 +716,24 @@ const BookingPage = () => {
 
       {/* Footer */}
       <Footer />
+
+      {/* Payment Modal */}
+      {user && (
+        <BookingPaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setPendingBookingId(null);
+            resetBooking();
+          }}
+          bookingId={pendingBookingId}
+          paymentType="deposit"
+          accessToken={user.accessToken || localStorage.getItem('accessToken')}
+          onPaymentSuccess={() => {
+            alert('Thanh toán cọc thành công! Đặt sân đã được xác nhận.');
+          }}
+        />
+      )}
     </div>
   );
 };

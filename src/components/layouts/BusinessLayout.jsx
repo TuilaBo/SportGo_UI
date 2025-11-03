@@ -69,6 +69,12 @@ export default function BusinessLayout({ title = 'Doanh nghiệp', children }) {
             >
               📈 Thống Kê Doanh Nghiệp
             </NavLink>
+            <NavLink 
+              to="/doanh-nghiep/reviews" 
+              className={({ isActive }) => `block px-3 py-2 rounded-lg text-sm transition-colors ${isActive ? 'bg-emerald-600 text-white shadow-md' : 'hover:bg-gray-100 text-gray-700'}`}
+            >
+              ⭐ Đánh giá
+            </NavLink>
           </nav>
         </aside>
         <main className="col-span-12 md:col-span-9 lg:col-span-10">

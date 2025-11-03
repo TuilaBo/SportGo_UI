@@ -36,7 +36,9 @@ const AdminStatsPage = () => {
   const toApiDate = (yyyyMmDd) => {
     if (!yyyyMmDd) return '';
     const [y, m, d] = yyyyMmDd.split('-');
-    return `${m}/${d}/${y}`; // MM/DD/YYYY for top-providers endpoint
+    const mm = String(m).padStart(2, '0');
+    const dd = String(d).padStart(2, '0');
+    return `${mm}/${dd}/${y}`; // MM/DD/YYYY
   };
 
   // Local fallback series for charts (until backend provides series data)
@@ -289,7 +291,7 @@ const AdminStatsPage = () => {
     </motion.div>
   );
 
-  const LineChart = ({ data, title, color = 'blue' }) => {
+  const LineChart = ({ data, title, color = 'blue', labels }) => {
     const maxValue = Math.max(...data);
     const minValue = Math.min(...data);
     
@@ -315,8 +317,8 @@ const AdminStatsPage = () => {
           })}
         </div>
         <div className="flex justify-between mt-4 text-xs text-gray-500">
-          {['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'].map((month, index) => (
-            <span key={index}>{month}</span>
+          {(labels && labels.length ? labels : ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12']).map((label, index) => (
+            <span key={index}>{label}</span>
           ))}
         </div>
       </div>
@@ -578,12 +580,20 @@ const AdminStatsPage = () => {
               <LineChart
                 data={(timeSeries || []).map(r => Number(r.newUsers || 0))}
                 title="Người dùng mới theo ngày"
-                color="blue"
+              color="blue"
+              labels={(timeSeries || []).map(r => {
+                const d = new Date(r.date);
+                return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+              })}
               />
               <LineChart
                 data={(timeSeries || []).map(r => Number(r.newProviders || 0))}
                 title="Nhà cung cấp mới theo ngày"
-                color="green"
+              color="green"
+              labels={(timeSeries || []).map(r => {
+                const d = new Date(r.date);
+                return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+              })}
               />
             </div>
 
@@ -592,12 +602,20 @@ const AdminStatsPage = () => {
               <LineChart
                 data={(timeSeries || []).map(r => Number(r.newBookings || 0))}
                 title="Lượt đặt mới theo ngày"
-                color="purple"
+              color="purple"
+              labels={(timeSeries || []).map(r => {
+                const d = new Date(r.date);
+                return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+              })}
               />
               <LineChart
                 data={(timeSeries || []).map(r => Number(r.revenue || 0))}
                 title="Doanh thu theo ngày (VNĐ)"
-                color="yellow"
+              color="yellow"
+              labels={(timeSeries || []).map(r => {
+                const d = new Date(r.date);
+                return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+              })}
               />
             </div>
           </motion.div>

@@ -6,11 +6,13 @@ import { useAuth } from '../../contexts/AuthContext';
 const BusinessStatsPage = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const toApiDate = (yyyyMmDd) => {
     if (!yyyyMmDd) return '';
     const [y, m, d] = yyyyMmDd.split('-');
-    return `${m}/${d}/${y}`;
+    const mm = String(m).padStart(2, '0');
+    const dd = String(d).padStart(2, '0');
+    return `${mm}/${dd}/${y}`;
   };
   const today = new Date();
   const sevenDaysAgo = new Date();
@@ -41,6 +43,10 @@ const BusinessStatsPage = () => {
   const [bookingsSize, setBookingsSize] = useState(10);
   const [filterCourtId, setFilterCourtId] = useState('');
   const [tempCourtId, setTempCourtId] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
+  const [searchTrigger, setSearchTrigger] = useState(0);
+  const [timeSeriesRequested, setTimeSeriesRequested] = useState(false);
+  const [timeSeriesTrigger, setTimeSeriesTrigger] = useState(0);
 
   // Mock data for business statistics
   const statsData = {
@@ -99,13 +105,13 @@ const BusinessStatsPage = () => {
     return () => controller.abort();
   }, [user]);
 
-  // Load provider overview stats
+  // Load provider overview stats (triggered manually)
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
         const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-        if (!accessToken || selectedFacilityIds.length === 0) { setOverview(null); return; }
+        if (!hasSearched || !accessToken || selectedFacilityIds.length === 0) { setOverview(null); return; }
         setLoadingOverview(true);
         setErrorOverview(null);
         const params = new URLSearchParams({
@@ -123,12 +129,11 @@ const BusinessStatsPage = () => {
         if (!cancelled) setErrorOverview(e.message || String(e));
       } finally {
         if (!cancelled) setLoadingOverview(false);
-        setIsLoading(false);
       }
     };
     load();
     return () => { cancelled = true; };
-  }, [user, fromDate, toDate, selectedFacilityIds.join(',')]);
+  }, [user, searchTrigger, selectedFacilityIds.join(',')]);
 
   // Load courts for selected facility (suggestions for Court ID)
   useEffect(() => {
@@ -157,13 +162,13 @@ const BusinessStatsPage = () => {
     return () => { cancelled = true; };
   }, [user, selectedFacilityIds.join(',')]);
 
-  // Load provider time-series for charts
+  // Load provider time-series for charts (triggered by section button)
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
         const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-        if (!accessToken || selectedFacilityIds.length === 0) { setTimeSeries([]); return; }
+        if (!timeSeriesRequested || !accessToken || selectedFacilityIds.length === 0) { setTimeSeries([]); return; }
         setTimeSeriesLoading(true);
         setTimeSeriesError(null);
         const params = new URLSearchParams({
@@ -186,15 +191,15 @@ const BusinessStatsPage = () => {
     };
     load();
     return () => { cancelled = true; };
-  }, [user, fromDate, toDate, selectedFacilityIds.join(',')]);
+  }, [user, timeSeriesTrigger, selectedFacilityIds.join(',')]);
 
-  // Load payment breakdown by booking status
+  // Load payment breakdown by booking status (triggered manually)
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
         const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-        if (!accessToken || selectedFacilityIds.length === 0) { setPaymentBreakdown([]); return; }
+        if (!hasSearched || !accessToken || selectedFacilityIds.length === 0) { setPaymentBreakdown([]); return; }
         setPaymentLoading(true);
         setPaymentError(null);
         const params = new URLSearchParams({
@@ -216,16 +221,16 @@ const BusinessStatsPage = () => {
     };
     load();
     return () => { cancelled = true; };
-  }, [user, fromDate, toDate, selectedFacilityIds.join(',')]);
+  }, [user, searchTrigger, selectedFacilityIds.join(',')]);
 
-  // Load provider bookings list
+  // Load provider bookings list (triggered manually + pagination/filters)
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
         const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
         const facilityId = selectedFacilityIds[0];
-        if (!accessToken || !facilityId) { setBookings([]); return; }
+        if (!hasSearched || !accessToken || !facilityId) { setBookings([]); return; }
         setBookingsLoading(true);
         setBookingsError(null);
         const params = new URLSearchParams({
@@ -250,7 +255,7 @@ const BusinessStatsPage = () => {
     };
     load();
     return () => { cancelled = true; };
-  }, [user, fromDate, toDate, selectedFacilityIds.join(','), bookingsPage, bookingsSize, filterCourtId]);
+  }, [user, searchTrigger, selectedFacilityIds.join(','), bookingsPage, bookingsSize, filterCourtId]);
 
   const StatCard = ({ title, value, icon, color, trend, trendValue, suffix = '' }) => (
     <motion.div
@@ -477,7 +482,7 @@ const BusinessStatsPage = () => {
               className="space-y-8"
             >
               {/* Filters */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                 <div>
                   <label className="block text-sm text-gray-600 mb-1">Từ</label>
                   <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-full border rounded px-2 py-2 text-sm" />
@@ -501,49 +506,107 @@ const BusinessStatsPage = () => {
                     ))}
                   </select>
                 </div>
+                <div>
+                  <button
+                    className="w-full h-[38px] mt-[22px] rounded bg-emerald-600 text-white text-sm hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                    onClick={() => { setHasSearched(true); setSearchTrigger((v) => v + 1); setBookingsPage(1); setTimeSeriesRequested(false); setTimeSeries([]); }}
+                    disabled={!fromDate || !toDate || selectedFacilityIds.length === 0}
+                  >
+                    Tìm kiếm
+                  </button>
+                </div>
               </div>
 
-              {/* Stats Cards from API */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title="Tổng Lượt Đặt Sân" value={overview?.totalBookings || 0} icon="⚽" color="bg-blue-100 text-blue-600" />
-                <StatCard title="Tổng Doanh Thu" value={overview?.totalRevenue || 0} icon="💰" color="bg-green-100 text-green-600" suffix=" VNĐ" />
-                <StatCard title="Tỉ lệ thành công (%)" value={Number(overview?.successRate || 0)} icon="📈" color="bg-indigo-100 text-indigo-600" />
-                <StatCard title="Đã hủy" value={overview?.canceledBookings || 0} icon="🛑" color="bg-rose-100 text-rose-600" />
-              </div>
+              {!hasSearched && (
+                <div className="mt-3 text-sm text-gray-700 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
+                  Nhập khoảng thời gian và chi nhánh, sau đó bấm "Tìm kiếm" để tải dữ liệu.
+                </div>
+              )}
+
+              {hasSearched && errorOverview && (
+                <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">
+                  Lỗi tải tổng quan: {errorOverview}
+                </div>
+              )}
+              {hasSearched && !loadingOverview && !errorOverview && !overview && (
+                <div className="mt-3 text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded px-3 py-2">
+                  Không có dữ liệu cho bộ lọc đã chọn.
+                </div>
+              )}
+
+              {/* Stats Cards from API (only after search) */}
+              {hasSearched ? (
+                loadingOverview ? (
+                  <div className="bg-white rounded-xl shadow p-4 text-sm text-gray-600">Đang tải tổng quan...</div>
+                ) : overview ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <StatCard title="Tổng Lượt Đặt Sân" value={overview.totalBookings} icon="⚽" color="bg-blue-100 text-blue-600" />
+                    <StatCard title="Tổng Doanh Thu" value={overview.totalRevenue} icon="💰" color="bg-green-100 text-green-600" suffix=" VNĐ" />
+                    <StatCard title="Tỉ lệ thành công (%)" value={Number(overview.successRate || 0)} icon="📈" color="bg-indigo-100 text-indigo-600" />
+                    <StatCard title="Đã hủy" value={overview.canceledBookings} icon="🛑" color="bg-rose-100 text-rose-600" />
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-xl shadow p-4 text-sm text-gray-700">Không có dữ liệu</div>
+                )
+              ) : (
+                <div className="bg-white rounded-xl shadow p-4 text-sm text-gray-700">Không có dữ liệu</div>
+              )}
 
               {/* Charts from API time-series */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <LineChart
-                  data={timeSeries.map(r => Number(r.bookingCount || 0))}
-                  title="Lượt đặt theo ngày"
-                  color="blue"
-                  labels={timeSeries.map(r => {
-                    const d = new Date(r.date);
-                    return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
-                  })}
-                />
-                <LineChart
-                  data={timeSeries.map(r => Number(r.revenue || 0))}
-                  title="Doanh thu theo ngày"
-                  color="green"
-                  suffix=" VNĐ"
-                  labels={timeSeries.map(r => {
-                    const d = new Date(r.date);
-                    return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
-                  })}
-                />
-              </div>
+              {timeSeriesRequested ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <LineChart
+                    data={timeSeries.map(r => Number(r.bookingCount || 0))}
+                    title="Lượt đặt theo ngày"
+                    color="blue"
+                    labels={timeSeries.map(r => {
+                      const d = new Date(r.date);
+                      return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+                    })}
+                  />
+                  <LineChart
+                    data={timeSeries.map(r => Number(r.revenue || 0))}
+                    title="Doanh thu theo ngày"
+                    color="green"
+                    suffix=" VNĐ"
+                    labels={timeSeries.map(r => {
+                      const d = new Date(r.date);
+                      return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+                    })}
+                  />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="bg-white rounded-xl shadow-lg p-6 text-sm text-gray-600">Bấm "Tải chi tiết" ở bên dưới để hiển thị biểu đồ.</div>
+                  <div className="bg-white rounded-xl shadow-lg p-6 text-sm text-gray-600">Bấm "Tải chi tiết" ở bên dưới để hiển thị biểu đồ.</div>
+                </div>
+              )}
 
               {/* Time-series details */}
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-800">Chi tiết chuỗi thời gian</h3>
-                  {(timeSeriesLoading) && <span className="text-sm text-gray-500">Đang tải...</span>}
+                  <div className="flex items-center gap-3">
+                    {timeSeriesLoading && <span className="text-sm text-gray-500">Đang tải...</span>}
+                    <button
+                      className="px-3 h-9 rounded bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                      onClick={() => { setTimeSeriesRequested(true); setTimeSeriesTrigger((v) => v + 1); }}
+                      disabled={!fromDate || !toDate || selectedFacilityIds.length === 0 || timeSeriesLoading}
+                      title={!fromDate || !toDate || selectedFacilityIds.length === 0 ? 'Chọn ngày và chi nhánh trước' : ''}
+                    >
+                      Tải chi tiết
+                    </button>
+                  </div>
                 </div>
+                {!timeSeriesRequested && (
+                  <div className="mb-3 text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded px-3 py-2">
+                    Bấm "Tải chi tiết" để tải chuỗi thời gian theo bộ lọc hiện tại.
+                  </div>
+                )}
                 {timeSeriesError && (
                   <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded mb-3">{timeSeriesError}</div>
                 )}
-                {!timeSeriesLoading && !timeSeriesError && (
+                {timeSeriesRequested && !timeSeriesLoading && !timeSeriesError && (
                   <div className="overflow-x-auto">
                     <table className="min-w-full text-sm">
                       <thead>
@@ -722,28 +785,35 @@ const BusinessStatsPage = () => {
                 />
               )}
 
-              {/* Charts Row using provider time-series */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <PieChart
-                  data={[
-                    { name: 'Doanh thu cọc', revenue: timeSeries.reduce((s, r) => s + Number(r.depositRevenue || 0), 0) },
-                    { name: 'Doanh thu cuối', revenue: timeSeries.reduce((s, r) => s + Number(r.finalRevenue || 0), 0) }
-                  ]}
-                  title="Cơ cấu doanh thu (cọc vs cuối)"
-                  valueKey="revenue"
-                  labelKey="name"
-                />
+              {/* Charts Row using provider time-series (only after requested) */}
+              {timeSeriesRequested ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <PieChart
+                    data={[
+                      { name: 'Doanh thu cọc', revenue: timeSeries.reduce((s, r) => s + Number(r.depositRevenue || 0), 0) },
+                      { name: 'Doanh thu cuối', revenue: timeSeries.reduce((s, r) => s + Number(r.finalRevenue || 0), 0) }
+                    ]}
+                    title="Cơ cấu doanh thu (cọc vs cuối)"
+                    valueKey="revenue"
+                    labelKey="name"
+                  />
 
-                <PieChart
-                  data={[
-                    { name: 'Đặt thành công', count: timeSeries.reduce((s, r) => s + Number(r.bookingCount || 0), 0) },
-                    { name: 'Đã hủy', count: timeSeries.reduce((s, r) => s + Number(r.canceledCount || 0), 0) }
-                  ]}
-                  title="Kết quả đặt sân"
-                  valueKey="count"
-                  labelKey="name"
-                />
-              </div>
+                  <PieChart
+                    data={[
+                      { name: 'Đặt thành công', count: timeSeries.reduce((s, r) => s + Number(r.bookingCount || 0), 0) },
+                      { name: 'Đã hủy', count: timeSeries.reduce((s, r) => s + Number(r.canceledCount || 0), 0) }
+                    ]}
+                    title="Kết quả đặt sân"
+                    valueKey="count"
+                    labelKey="name"
+                  />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="bg-white rounded-xl shadow-lg p-6 text-sm text-gray-600">Bấm "Tải chi tiết" ở tab Tổng Quan để hiển thị biểu đồ.</div>
+                  <div className="bg-white rounded-xl shadow-lg p-6 text-sm text-gray-600">Bấm "Tải chi tiết" ở tab Tổng Quan để hiển thị biểu đồ.</div>
+                </div>
+              )}
 
               {/* Top Courts Detailed List (from overview) */}
               {overview && overview.topCourts && overview.topCourts.length > 0 && (
