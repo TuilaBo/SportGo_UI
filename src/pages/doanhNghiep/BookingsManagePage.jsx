@@ -8,6 +8,15 @@ export default function BookingsManagePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [processingIds, setProcessingIds] = useState(new Set());
+  const [markPaidOrderCode, setMarkPaidOrderCode] = useState('');
+  const [showMarkPaidModal, setShowMarkPaidModal] = useState(false);
+  const [filterDate, setFilterDate] = useState('');
+
+  const toApiDate = (yyyyMmDd) => {
+    if (!yyyyMmDd) return '';
+    const [y, m, d] = yyyyMmDd.split('-');
+    return `${m}/${d}/${y}`;
+  };
 
   useEffect(() => {
     loadBookings();
@@ -19,7 +28,13 @@ export default function BookingsManagePage() {
       setError(null);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
 
-      const response = await fetch('/api/Bookings', {
+      const params = new URLSearchParams();
+      if (filterDate) {
+        params.append('date', toApiDate(filterDate));
+      }
+
+      const url = `/api/Bookings${params.toString() ? `?${params.toString()}` : ''}`;
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'accept': 'application/json',
@@ -147,6 +162,42 @@ export default function BookingsManagePage() {
     }
   };
 
+  const handleMarkPaid = async () => {
+    if (!markPaidOrderCode.trim()) {
+      alert('Vui lòng nhập mã đơn hàng (orderCode)');
+      return;
+    }
+
+    if (!confirm(`Xác nhận đã nhận thanh toán cho đơn hàng ${markPaidOrderCode}?`)) {
+      return;
+    }
+
+    try {
+      const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
+
+      const response = await fetch(`/api/booking-payment/${markPaidOrderCode}/mark-paid`, {
+        method: 'POST',
+        headers: {
+          'accept': 'text/plain',
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `HTTP ${response.status}`);
+      }
+
+      alert(`Đã đánh dấu thanh toán cho đơn hàng ${markPaidOrderCode}`);
+      setShowMarkPaidModal(false);
+      setMarkPaidOrderCode('');
+      await loadBookings();
+    } catch (err) {
+      console.error('Failed to mark paid:', err);
+      alert(`Lỗi khi đánh dấu thanh toán: ${err.message}`);
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'Confirmed':
@@ -182,11 +233,21 @@ export default function BookingsManagePage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">Quản lý đặt sân</h1>
-          <button
-            onClick={loadBookings}
-            disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-          >
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setShowMarkPaidModal(true)}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Đánh dấu đã thanh toán</span>
+            </button>
+            <button
+              onClick={loadBookings}
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            >
             {loading ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -201,6 +262,51 @@ export default function BookingsManagePage() {
               </>
             )}
           </button>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-end gap-3">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Lọc theo ngày
+              </label>
+              <input
+                type="date"
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    loadBookings();
+                  }
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <button
+              onClick={loadBookings}
+              disabled={loading}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            >
+              Tìm
+            </button>
+            {filterDate && (
+              <button
+                onClick={() => {
+                  setFilterDate('');
+                  loadBookings();
+                }}
+                className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Xóa bộ lọc
+              </button>
+            )}
+          </div>
+          {filterDate && (
+            <div className="mt-2 text-sm text-gray-600">
+              Đang lọc: <span className="font-medium">{toApiDate(filterDate)}</span>
+            </div>
+          )}
         </div>
 
         {error && (
@@ -335,6 +441,62 @@ export default function BookingsManagePage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Mark Paid Modal */}
+        {showMarkPaidModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Đánh dấu đã thanh toán</h2>
+                <button
+                  onClick={() => {
+                    setShowMarkPaidModal(false);
+                    setMarkPaidOrderCode('');
+                  }}
+                  className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Mã đơn hàng (orderCode)
+                  </label>
+                  <input
+                    type="text"
+                    value={markPaidOrderCode}
+                    onChange={(e) => setMarkPaidOrderCode(e.target.value)}
+                    placeholder="Nhập mã đơn hàng"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Nhập mã đơn hàng (orderCode) từ thanh toán để đánh dấu đã nhận tiền mặt/chuyển khoản
+                  </p>
+                </div>
+
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => {
+                      setShowMarkPaidModal(false);
+                      setMarkPaidOrderCode('');
+                    }}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    onClick={handleMarkPaid}
+                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                  >
+                    Xác nhận
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

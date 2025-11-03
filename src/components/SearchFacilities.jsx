@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import GoogleMapEmbed from './GoogleMapEmbed';
+import BookingPaymentModal from './BookingPaymentModal';
 
 export default function SearchFacilities() {
   const { user } = useAuth();
@@ -42,6 +43,10 @@ export default function SearchFacilities() {
   const [bookingStep, setBookingStep] = useState(1); // 1: Select Slot, 2: Confirm
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [bookingLoading, setBookingLoading] = useState(false);
+  
+  // Payment modal state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [pendingBookingId, setPendingBookingId] = useState(null);
 
   // Load sport types
   useEffect(() => {
@@ -306,10 +311,17 @@ export default function SearchFacilities() {
 
       const bookingResult = await response.json();
       
-      // Show success message
-      alert(`Đặt sân thành công!\nSân: ${selectedCourt.name}\nThời gian: ${selectedSlot.startTime} - ${selectedSlot.endTime}\nGiá: ${selectedSlot.price?.toLocaleString('vi-VN')} VNĐ\nMã đặt sân: ${bookingResult.bookingId || 'N/A'}`);
-      
-      closeBookingModal();
+      // If booking is Pending, show payment modal for deposit
+      if (bookingResult.status === 'Pending' && bookingResult.bookingId) {
+        setPendingBookingId(bookingResult.bookingId);
+        setShowPaymentModal(true);
+        closeBookingModal();
+      } else {
+        // Show success message
+        alert(`Đặt sân thành công!\nSân: ${selectedCourt.name}\nThời gian: ${selectedSlot.startTime} - ${selectedSlot.endTime}\nGiá: ${selectedSlot.price?.toLocaleString('vi-VN')} VNĐ\nMã đặt sân: ${bookingResult.bookingId || 'N/A'}`);
+        
+        closeBookingModal();
+      }
       
       // Refresh slots to show updated availability
       loadSlots(selectedCourt.courtId);
@@ -1056,6 +1068,23 @@ export default function SearchFacilities() {
           </div>
         )}
       </div>
+
+      {/* Payment Modal */}
+      {user && (
+        <BookingPaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setPendingBookingId(null);
+          }}
+          bookingId={pendingBookingId}
+          paymentType="deposit"
+          accessToken={user.accessToken || localStorage.getItem('accessToken')}
+          onPaymentSuccess={() => {
+            alert('Thanh toán cọc thành công! Đặt sân đã được xác nhận.');
+          }}
+        />
+      )}
     </div>
   );
 }
