@@ -28,7 +28,9 @@ const MyBookingsPage = () => {
   const toApiDate = (yyyyMmDd) => {
     if (!yyyyMmDd) return '';
     const [y, m, d] = yyyyMmDd.split('-');
-    return `${m}/${d}/${y}`;
+    const mm = String(m).padStart(2, '0');
+    const dd = String(d).padStart(2, '0');
+    return `${mm}/${dd}/${y}`; // MM/DD/YYYY format
   };
 
   const loadBookings = useCallback(async () => {
