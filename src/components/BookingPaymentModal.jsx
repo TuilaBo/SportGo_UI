@@ -211,3 +211,5 @@ const BookingPaymentModal = ({ isOpen, onClose, bookingId, paymentType, accessTo
 export default BookingPaymentModal;
 
 
+
+

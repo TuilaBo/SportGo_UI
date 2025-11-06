@@ -19,6 +19,9 @@ const AdminStatsPage = () => {
   const [timeSeries, setTimeSeries] = useState([]);
   const [isTimeSeriesLoading, setIsTimeSeriesLoading] = useState(false);
   const [timeSeriesError, setTimeSeriesError] = useState(null);
+  const [sportTypeBreakdown, setSportTypeBreakdown] = useState({ totalBookings: 0, sportTypes: [] });
+  const [isSportTypeLoading, setIsSportTypeLoading] = useState(false);
+  const [sportTypeError, setSportTypeError] = useState(null);
   const [topPackages, setTopPackages] = useState([]);
   const [isTopPackagesLoading, setIsTopPackagesLoading] = useState(false);
   const [topPackagesError, setTopPackagesError] = useState(null);
@@ -198,6 +201,40 @@ const AdminStatsPage = () => {
       }
     };
     loadTimeSeries();
+    return () => { isCancelled = true; };
+  }, [user?.accessToken, fromDate, toDate]);
+
+  // Load Sport Type Breakdown (top sports)
+  useEffect(() => {
+    let isCancelled = false;
+    const loadSportTypes = async () => {
+      if (!user || !user.accessToken) {
+        setSportTypeBreakdown({ totalBookings: 0, sportTypes: [] });
+        return;
+      }
+      setIsSportTypeLoading(true);
+      setSportTypeError(null);
+      try {
+        const url = `/api/admin/dashboard/sport-type-breakdown?from=${encodeURIComponent(toApiDate(fromDate))}&to=${encodeURIComponent(toApiDate(toDate))}`;
+        const res = await fetch(url, {
+          headers: {
+            'accept': 'application/json',
+            'Authorization': `Bearer ${user.accessToken}`
+          }
+        });
+        if (!res.ok) throw new Error(`Failed to load sport types (${res.status})`);
+        const data = await res.json();
+        if (!isCancelled) setSportTypeBreakdown({
+          totalBookings: Number(data.totalBookings || 0),
+          sportTypes: Array.isArray(data.sportTypes) ? data.sportTypes : []
+        });
+      } catch (e) {
+        if (!isCancelled) setSportTypeError(e.message || 'Load sport type breakdown failed');
+      } finally {
+        if (!isCancelled) setIsSportTypeLoading(false);
+      }
+    };
+    loadSportTypes();
     return () => { isCancelled = true; };
   }, [user?.accessToken, fromDate, toDate]);
 
@@ -634,33 +671,65 @@ const AdminStatsPage = () => {
               title="Doanh Thu Theo Tháng (VNĐ)"
             />
 
-            {/* Sports Distribution */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <PieChart
-                data={statsData.topSports}
-                title="Phân Bố Theo Môn Thể Thao"
-              />
-              
-              {/* Top Performers */}
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Top Môn Thể Thao</h3>
-                <div className="space-y-4">
-                  {statsData.topSports.map((sport, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-bold mr-3">
-                          {index + 1}
-                        </div>
-                        <span className="font-medium text-gray-800">{sport.name}</span>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-semibold text-gray-800">{sport.bookings.toLocaleString('vi-VN')} lượt</div>
-                        <div className="text-xs text-gray-500">{sport.percentage}%</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            {/* Sports Distribution (from API) */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Phân Bố Theo Môn Thể Thao</h3>
+                <span className="text-sm text-gray-500">{fromDate} → {toDate}</span>
               </div>
+              {isSportTypeLoading && (
+                <div className="text-center py-6 text-gray-600">Đang tải...</div>
+              )}
+              {sportTypeError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded mb-3">{sportTypeError}</div>
+              )}
+              {!isSportTypeLoading && !sportTypeError && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <PieChart
+                    data={(sportTypeBreakdown.sportTypes || []).map(st => ({
+                      name: st.sportTypeName,
+                      bookings: Number(st.bookingCount || 0),
+                      percentage: Number(st.percentage || 0)
+                    }))}
+                    title={`Tổng lượt đặt: ${(sportTypeBreakdown.totalBookings || 0).toLocaleString('vi-VN')}`}
+                  />
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-md font-semibold text-gray-800">Top Môn Được Đặt</h4>
+                      <span className="text-xs text-gray-500">{(sportTypeBreakdown.totalBookings || 0).toLocaleString('vi-VN')} lượt</span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full text-sm">
+                        <thead>
+                          <tr className="text-left text-gray-600 border-b">
+                            <th className="py-2 pr-4">#</th>
+                            <th className="py-2 pr-4">Môn</th>
+                            <th className="py-2 pr-4">Lượt đặt</th>
+                            <th className="py-2 pr-4">Tỉ lệ (%)</th>
+                            <th className="py-2 pr-4">Doanh thu (VNĐ)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(sportTypeBreakdown.sportTypes || []).length === 0 && (
+                            <tr>
+                              <td colSpan={5} className="py-6 text-center text-gray-500">Không có dữ liệu</td>
+                            </tr>
+                          )}
+                          {(sportTypeBreakdown.sportTypes || []).map((st, idx) => (
+                            <tr key={st.sportTypeId} className="border-b last:border-0">
+                              <td className="py-2 pr-4">{st.rank ?? (idx + 1)}</td>
+                              <td className="py-2 pr-4 font-medium text-gray-900">{st.sportTypeName}</td>
+                              <td className="py-2 pr-4">{Number(st.bookingCount || 0).toLocaleString('vi-VN')}</td>
+                              <td className="py-2 pr-4">{Number(st.percentage || 0)}</td>
+                              <td className="py-2 pr-4">{Number(st.totalRevenue || 0).toLocaleString('vi-VN')}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Time Series (Daily) */}
