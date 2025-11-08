@@ -1,17 +1,1 @@
-{
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "http://160.191.245.237/api/:path*"
-    },
-    {
-      "source": "/facilities/:path*",
-      "destination": "http://160.191.245.237/facilities/:path*"
-    },
-    {
-      "source": "/courts/:path*",
-      "destination": "http://160.191.245.237/courts/:path*"
-    }
-  ]
-}
-
+{ "rewrites": [{ "source": "/(.*)", "destination": "/" }] }
