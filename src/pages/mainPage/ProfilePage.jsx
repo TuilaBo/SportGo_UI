@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import ManagerBar from '../../components/ManagerBar';
 import Footer from '../../components/Footer';
 import { motion } from 'framer-motion';
+import { getApiUrl } from '../../config/api';
 
 const ProfilePage = () => {
   const { user, logout } = useAuth();
@@ -25,7 +26,7 @@ const ProfilePage = () => {
 
       const accessToken = user.accessToken || localStorage.getItem('accessToken');
       
-      const response = await fetch('/api/Auth/me', {
+      const response = await fetch(getApiUrl('Auth/me'), {
         method: 'GET',
         headers: {
           'accept': 'application/json',

@@ -2,6 +2,7 @@
 import { motion } from 'framer-motion';
 import BusinessLayout from '../../components/layouts/BusinessLayout';
 import { useAuth } from '../../contexts/AuthContext';
+import { getApiUrl } from '../../config/api';
 
 const BusinessStatsPage = () => {
   const { user } = useAuth();
@@ -88,7 +89,7 @@ const BusinessStatsPage = () => {
       try {
         const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
         if (!accessToken) { setFacilities([]); return; }
-        const res = await fetch('/api/provider/facilities?page=1&size=50', {
+        const res = await fetch(getApiUrl('provider/facilities?page=1&size=50'), {
           headers: { 'accept': 'application/json', 'Authorization': `Bearer ${accessToken}` },
           signal: controller.signal
         });
@@ -119,7 +120,7 @@ const BusinessStatsPage = () => {
           to: toApiDate(toDate),
           facilityIds: selectedFacilityIds.join(',')
         });
-        const res = await fetch(`/api/provider/dashboard/overview?${params.toString()}`, {
+        const res = await fetch(getApiUrl(`provider/dashboard/overview?${params.toString()}`), {
           headers: { 'accept': 'application/json', 'Authorization': `Bearer ${accessToken}` }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -145,7 +146,7 @@ const BusinessStatsPage = () => {
         if (!accessToken || !facilityId) { setCourtsOptions([]); return; }
         setCourtsLoading(true);
         setCourtsError(null);
-        const res = await fetch(`/api/provider/facilities/${facilityId}/courts?page=1&size=50`, {
+        const res = await fetch(getApiUrl(`provider/facilities/${facilityId}/courts?page=1&size=50`), {
           headers: { 'accept': 'application/json', 'Authorization': `Bearer ${accessToken}` }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -177,7 +178,7 @@ const BusinessStatsPage = () => {
           granularity: 'day',
           facilityIds: selectedFacilityIds.join(',')
         });
-        const res = await fetch(`/api/provider/dashboard/time-series?${params.toString()}`, {
+        const res = await fetch(getApiUrl(`provider/dashboard/time-series?${params.toString()}`), {
           headers: { 'accept': 'application/json', 'Authorization': `Bearer ${accessToken}` }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -207,7 +208,7 @@ const BusinessStatsPage = () => {
           to: toApiDate(toDate),
           facilityIds: selectedFacilityIds.join(',')
         });
-        const res = await fetch(`/api/provider/dashboard/payment-breakdown?${params.toString()}`, {
+        const res = await fetch(getApiUrl(`provider/dashboard/payment-breakdown?${params.toString()}`), {
           headers: { 'accept': 'application/json', 'Authorization': `Bearer ${accessToken}` }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -241,7 +242,7 @@ const BusinessStatsPage = () => {
           size: String(bookingsSize)
         });
         if (filterCourtId && Number(filterCourtId) > 0) params.append('courtId', String(Number(filterCourtId)));
-        const res = await fetch(`/api/provider/dashboard/bookings?${params.toString()}`, {
+        const res = await fetch(getApiUrl(`provider/dashboard/bookings?${params.toString()}`), {
           headers: { 'accept': 'application/json', 'Authorization': `Bearer ${accessToken}` }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -941,7 +942,7 @@ const BusinessStatsPage = () => {
                             facilityId: String(facilityId),
                             courtId: String(Number(tempCourtId))
                           });
-                          const res = await fetch(`/api/provider/dashboard/heatmap?${params.toString()}`, {
+                          const res = await fetch(getApiUrl(`provider/dashboard/heatmap?${params.toString()}`), {
                             headers: { 'accept': 'application/json', 'Authorization': `Bearer ${accessToken}` }
                           });
                           if (!res.ok) throw new Error(`HTTP ${res.status}`);

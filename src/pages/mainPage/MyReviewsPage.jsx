@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import ManagerBar from '../../components/ManagerBar';
 import Footer from '../../components/Footer';
 import { useAuth } from '../../contexts/AuthContext';
+import { getApiUrl } from '../../config/api';
 
 const MyReviewsPage = () => {
   const { user } = useAuth();
@@ -30,7 +31,7 @@ const MyReviewsPage = () => {
         size: String(size)
       });
 
-      const url = `/api/reviews/my-reviews?${params.toString()}`;
+      const url = getApiUrl(`reviews/my-reviews?${params.toString()}`);
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -87,7 +88,7 @@ const MyReviewsPage = () => {
       setEditLoading(true);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
 
-      const response = await fetch(`/api/reviews/${editingReview.reviewId}`, {
+      const response = await fetch(getApiUrl(`reviews/${editingReview.reviewId}`), {
         method: 'PUT',
         headers: {
           'accept': 'text/plain',
@@ -133,7 +134,7 @@ const MyReviewsPage = () => {
       setDeletingReviewId(reviewId);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
 
-      const response = await fetch(`/api/reviews/${reviewId}`, {
+      const response = await fetch(getApiUrl(`reviews/${reviewId}`), {
         method: 'DELETE',
         headers: {
           'accept': 'text/plain',

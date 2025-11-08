@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import GoogleMapEmbed from './GoogleMapEmbed';
 import BookingPaymentModal from './BookingPaymentModal';
+import { getApiUrl } from '../config/api';
 
 export default function SearchFacilities() {
   const { user } = useAuth();
@@ -53,7 +54,7 @@ export default function SearchFacilities() {
     const loadSportTypes = async () => {
       try {
         const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-        const res = await fetch('/api/provider/sport-types', {
+        const res = await fetch(getApiUrl('provider/sport-types'), {
           method: 'GET',
           headers: {
             'accept': 'text/plain',
@@ -104,7 +105,7 @@ export default function SearchFacilities() {
         size: '10'
       });
 
-      const res = await fetch(`/api/search/facilities?${params}`, {
+      const res = await fetch(getApiUrl(`search/facilities?${params}`), {
         method: 'GET',
         headers: {
           'accept': 'text/plain',
@@ -140,7 +141,7 @@ export default function SearchFacilities() {
       setFacilityDetailError(null);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
-      const res = await fetch(`/facilities/${facilityId}`, {
+      const res = await fetch(getApiUrl(`facilities/${facilityId}`), {
         method: 'GET',
         headers: {
           'accept': 'application/json',
@@ -170,7 +171,7 @@ export default function SearchFacilities() {
       setCourtsError(null);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
-      const res = await fetch(`/api/search/facilities/${facilityId}/courts?sportTypeId=${searchForm.sportTypeId}&page=1&size=20`, {
+      const res = await fetch(getApiUrl(`search/facilities/${facilityId}/courts?sportTypeId=${searchForm.sportTypeId}&page=1&size=20`), {
         method: 'GET',
         headers: {
           'accept': 'application/json',
@@ -200,7 +201,7 @@ export default function SearchFacilities() {
       setSlotsError(null);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
-      const res = await fetch(`/courts/courts/${courtId}/slots?date=${searchForm.date}&tier=${searchForm.tier}`, {
+      const res = await fetch(getApiUrl(`courts/${courtId}/slots?date=${searchForm.date}&tier=${searchForm.tier}`), {
         method: 'GET',
         headers: {
           'accept': 'application/json',
@@ -290,7 +291,7 @@ export default function SearchFacilities() {
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
       // Call the actual booking API
-      const response = await fetch('/api/bookings', {
+      const response = await fetch(getApiUrl('bookings'), {
         method: 'POST',
         headers: {
           'accept': 'application/json',

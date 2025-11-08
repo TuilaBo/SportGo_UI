@@ -3,6 +3,7 @@ import BusinessLayout from '../../components/layouts/BusinessLayout';
 import OperatingHoursModal from '../../components/OperatingHoursModal';
 import CalendarExceptionsModal from '../../components/CalendarExceptionsModal';
 import { useAuth } from '../../contexts/AuthContext';
+import { getApiUrl } from '../../config/api';
 
 export default function CourtsPage() {
   const { user } = useAuth();
@@ -97,7 +98,7 @@ export default function CourtsPage() {
       setSportTypesError(null);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
-      const res = await fetch('/api/provider/sport-types', {
+      const res = await fetch(getApiUrl('provider/sport-types'), {
         method: 'GET',
         headers: {
           'accept': 'text/plain',
@@ -135,7 +136,7 @@ export default function CourtsPage() {
       setSlotsError(null);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
-      const res = await fetch(`/api/provider/courts/${courtId}/slots?date=${date}`, {
+      const res = await fetch(getApiUrl(`provider/courts/${courtId}/slots?date=${date}`), {
         method: 'GET',
         headers: {
           'accept': 'application/json',
@@ -175,7 +176,7 @@ export default function CourtsPage() {
       setDeleteSlotsResult(null);
       
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-      const url = `/api/provider/courts/${selectedCourtId}/slots?from=${deleteSlotsForm.from}&to=${deleteSlotsForm.to}&onlyAvailable=true`;
+      const url = getApiUrl(`provider/courts/${selectedCourtId}/slots?from=${deleteSlotsForm.from}&to=${deleteSlotsForm.to}&onlyAvailable=true`);
       
       const res = await fetch(url, {
         method: 'DELETE',
@@ -229,7 +230,7 @@ export default function CourtsPage() {
         dryRun: slotGenerationForm.dryRun.toString()
       });
       
-      const res = await fetch(`/api/provider/courts/${selectedCourtId}/slots/generate?${params}`, {
+      const res = await fetch(getApiUrl(`provider/courts/${selectedCourtId}/slots/generate?${params}`), {
         method: 'POST',
         headers: {
           'accept': 'text/plain',
@@ -294,7 +295,7 @@ export default function CourtsPage() {
       setEditPricingError(null);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
-      const res = await fetch(`/api/provider/courts/${selectedCourtId}/pricings/${editingPricingId}`, {
+      const res = await fetch(getApiUrl(`provider/courts/${selectedCourtId}/pricings/${editingPricingId}`), {
         method: 'PUT',
         headers: {
           'accept': '*/*',
@@ -324,7 +325,7 @@ export default function CourtsPage() {
       setPricingListLoading(true);
       setPricingListError(null);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-      const res = await fetch(`/api/provider/courts/${courtId}/pricings`, {
+      const res = await fetch(getApiUrl(`provider/courts/${courtId}/pricings`), {
         headers: {
           'accept': 'application/json, text/plain',
           'Authorization': `Bearer ${accessToken}`
@@ -348,7 +349,7 @@ export default function CourtsPage() {
         setFacLoading(true);
         setFacError(null);
         const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-        const res = await fetch('/api/provider/facilities?page=1&size=50', {
+        const res = await fetch(getApiUrl('provider/facilities?page=1&size=50'), {
           headers: {
             'accept': 'application/json, text/plain',
             'Authorization': `Bearer ${accessToken}`
@@ -384,7 +385,7 @@ export default function CourtsPage() {
       setLoading(true);
       setError(null);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-      const url = `/api/provider/facilities/${facilityId}/courts?sportTypeId=${sport}&page=${p}&size=${s}`;
+      const url = getApiUrl(`provider/facilities/${facilityId}/courts?sportTypeId=${sport}&page=${p}&size=${s}`);
       const res = await fetch(url, {
         headers: {
           'accept': 'application/json, text/plain',
@@ -411,7 +412,7 @@ export default function CourtsPage() {
     if (!selectedFacilityId) return;
     try {
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-      const res = await fetch(`/api/provider/facilities/${selectedFacilityId}/courts`, {
+      const res = await fetch(getApiUrl(`provider/facilities/${selectedFacilityId}/courts`), {
         method: 'POST',
         headers: {
           'accept': 'text/plain, application/json',
@@ -667,7 +668,7 @@ export default function CourtsPage() {
                     setPricingLoading(true);
                     setPricingError(null);
                     const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-                    const res = await fetch(`/api/provider/courts/${selectedCourtId}/pricings`, {
+                    const res = await fetch(getApiUrl(`provider/courts/${selectedCourtId}/pricings`), {
                       method: 'POST',
                       headers: {
                         'accept': 'text/plain, application/json',
@@ -843,7 +844,7 @@ export default function CourtsPage() {
                                 
                                 try {
                                   const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-                                  const res = await fetch(`/api/provider/courts/${selectedCourtId}/pricings/${p.id}`, {
+                                  const res = await fetch(getApiUrl(`provider/courts/${selectedCourtId}/pricings/${p.id}`), {
                                     method: 'DELETE',
                                     headers: {
                                       'accept': '*/*',

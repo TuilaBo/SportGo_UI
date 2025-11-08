@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { getApiUrl } from '../config/api';
 
 const BookingPaymentModal = ({ isOpen, onClose, bookingId, paymentType, accessToken, onPaymentSuccess }) => {
   const [checkoutData, setCheckoutData] = useState(null);
@@ -19,7 +20,7 @@ const BookingPaymentModal = ({ isOpen, onClose, bookingId, paymentType, accessTo
     if (!bookingId || !checkoutData?.orderCode) return;
 
     try {
-      const res = await fetch(`/api/booking-payment/${checkoutData.orderCode}/status`, {
+      const res = await fetch(getApiUrl(`booking-payment/${checkoutData.orderCode}/status`), {
         method: 'GET',
         headers: {
           'accept': 'application/json',
@@ -209,6 +210,7 @@ const BookingPaymentModal = ({ isOpen, onClose, bookingId, paymentType, accessTo
 };
 
 export default BookingPaymentModal;
+
 
 
 

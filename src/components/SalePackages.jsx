@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { getApiUrl } from '../config/api';
 
 export default function SalePackages() {
   const { user } = useAuth();
@@ -32,7 +33,7 @@ export default function SalePackages() {
       setError(null);
       
       // Try without authentication first (public endpoint)
-      const res = await fetch('/api/packages/available?page=1&size=20', {
+      const res = await fetch(getApiUrl('packages/available?page=1&size=20'), {
         method: 'GET',
         headers: {
           'accept': 'application/json'
@@ -45,7 +46,7 @@ export default function SalePackages() {
           const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
           
           if (accessToken) {
-            const resWithAuth = await fetch('/api/packages/available?page=1&size=20', {
+            const resWithAuth = await fetch(getApiUrl('packages/available?page=1&size=20'), {
               method: 'GET',
               headers: {
                 'accept': 'application/json',
@@ -106,7 +107,7 @@ export default function SalePackages() {
       setUserPackagesLoading(true);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
-      const res = await fetch('/api/packages/mine?onlyActive=true&page=1&size=20', {
+      const res = await fetch(getApiUrl('packages/mine?onlyActive=true&page=1&size=20'), {
         method: 'GET',
         headers: {
           'accept': 'application/json',
@@ -173,7 +174,7 @@ export default function SalePackages() {
       
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
-      const res = await fetch('/api/packages/purchase/checkout', {
+      const res = await fetch(getApiUrl('packages/purchase/checkout'), {
         method: 'POST',
         headers: {
           'accept': 'application/json',
@@ -231,7 +232,7 @@ export default function SalePackages() {
     try {
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
-      const res = await fetch(`/api/packages/payment-status/${orderCode}`, {
+      const res = await fetch(getApiUrl(`packages/payment-status/${orderCode}`), {
         method: 'GET',
         headers: {
           'accept': 'application/json',

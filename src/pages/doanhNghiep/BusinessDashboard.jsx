@@ -4,6 +4,7 @@ import GoogleMapEmbed from '../../components/GoogleMapEmbed';
 import OperatingHoursModal from '../../components/OperatingHoursModal';
 import CalendarExceptionsModal from '../../components/CalendarExceptionsModal';
 import { useAuth } from '../../contexts/AuthContext';
+import { getApiUrl } from '../../config/api';
 
 export default function BusinessDashboard() {
   const { user } = useAuth();
@@ -78,7 +79,7 @@ export default function BusinessDashboard() {
           setFacLoading(false);
           return;
         }
-        const url = `/api/provider/facilities?page=${facPage}&size=${facSize}`;
+        const url = getApiUrl(`provider/facilities?page=${facPage}&size=${facSize}`);
         const res = await fetch(url, {
           method: 'GET',
           headers: {
@@ -129,7 +130,7 @@ export default function BusinessDashboard() {
           to: toApiDate(toDate),
           facilityIds: selectedFacilityIds.join(',')
         });
-        const res = await fetch(`/api/provider/dashboard/overview?${params.toString()}`, {
+        const res = await fetch(getApiUrl(`provider/dashboard/overview?${params.toString()}`), {
           headers: {
             'accept': 'application/json, text/plain',
             'Authorization': `Bearer ${accessToken}`
@@ -168,7 +169,7 @@ export default function BusinessDashboard() {
       setCreating(true);
       setCreateError(null);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-      const res = await fetch('/api/provider/facilities', {
+      const res = await fetch(getApiUrl('provider/facilities'), {
         method: 'POST',
         headers: {
           'accept': 'text/plain, application/json',
@@ -242,7 +243,7 @@ export default function BusinessDashboard() {
       setSportTypesError(null);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
-      const res = await fetch('/api/provider/sport-types', {
+      const res = await fetch(getApiUrl('provider/sport-types'), {
         method: 'GET',
         headers: {
           'accept': 'text/plain',
@@ -278,7 +279,7 @@ export default function BusinessDashboard() {
       setFacDetailError(null);
       setFacDetailLoading(true);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-      const res = await fetch(`/api/provider/facilities/${facilityId}`, {
+      const res = await fetch(getApiUrl(`provider/facilities/${facilityId}`), {
         method: 'GET',
         headers: {
           'accept': 'application/json, text/plain',
@@ -329,7 +330,7 @@ export default function BusinessDashboard() {
     try {
       setFacSaving(true);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-      const res = await fetch(`/api/provider/facilities/${facDetail.facilityId}`, {
+      const res = await fetch(getApiUrl(`provider/facilities/${facDetail.facilityId}`), {
         method: 'PUT',
         headers: {
           'accept': '*/*',
@@ -385,7 +386,7 @@ export default function BusinessDashboard() {
     if (!facDetail) return;
     try {
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-      const res = await fetch(`/api/provider/facilities/${facDetail.facilityId}/courts`, {
+      const res = await fetch(getApiUrl(`provider/facilities/${facDetail.facilityId}/courts`), {
         method: 'POST',
         headers: {
           'accept': 'text/plain, application/json',
@@ -424,7 +425,7 @@ export default function BusinessDashboard() {
     try {
       setFacDeleting(true);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-      const res = await fetch(`/api/provider/facilities/${facDetail.facilityId}`, {
+      const res = await fetch(getApiUrl(`provider/facilities/${facDetail.facilityId}`), {
         method: 'DELETE',
         headers: {
           'accept': '*/*',
@@ -793,7 +794,7 @@ export default function BusinessDashboard() {
                               setCourtDetailError(null);
                               setCourtDetailLoading(true);
                               const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-                              const res = await fetch(`/api/provider/courts/${c.courtId}`, {
+                              const res = await fetch(getApiUrl(`provider/courts/${c.courtId}`), {
                                 method: 'GET',
                                 headers: {
                                   'accept': 'application/json, text/plain',
@@ -906,7 +907,7 @@ export default function BusinessDashboard() {
                     try {
                       setCourtSaving(true);
                       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-                      const res = await fetch(`/api/provider/courts/${selectedCourtId}`, {
+                      const res = await fetch(getApiUrl(`provider/courts/${selectedCourtId}`), {
                         method: 'PUT',
                         headers: {
                           'accept': '*/*',

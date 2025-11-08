@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import BusinessLayout from '../../components/layouts/BusinessLayout';
 import { useAuth } from '../../contexts/AuthContext';
+import { getApiUrl } from '../../config/api';
 
 export default function BookingsManagePage() {
   const { user } = useAuth();
@@ -35,7 +36,7 @@ export default function BookingsManagePage() {
         params.append('date', toApiDate(filterDate));
       }
 
-      const url = `/api/Bookings${params.toString() ? `?${params.toString()}` : ''}`;
+      const url = getApiUrl(`Bookings${params.toString() ? `?${params.toString()}` : ''}`);
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -68,7 +69,7 @@ export default function BookingsManagePage() {
       setProcessingIds(prev => new Set(prev).add(bookingId));
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
 
-      const response = await fetch(`/api/Bookings/${bookingId}/check-in`, {
+      const response = await fetch(getApiUrl(`Bookings/${bookingId}/check-in`), {
         method: 'POST',
         headers: {
           'accept': 'text/plain',
@@ -103,7 +104,7 @@ export default function BookingsManagePage() {
       setProcessingIds(prev => new Set(prev).add(bookingId));
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
 
-      const response = await fetch(`/api/Bookings/${bookingId}/complete`, {
+      const response = await fetch(getApiUrl(`Bookings/${bookingId}/complete`), {
         method: 'POST',
         headers: {
           'accept': 'text/plain',
@@ -138,7 +139,7 @@ export default function BookingsManagePage() {
       setProcessingIds(prev => new Set(prev).add(bookingId));
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
 
-      const response = await fetch(`/api/Bookings/${bookingId}/cancel?refundUsage=false`, {
+      const response = await fetch(getApiUrl(`Bookings/${bookingId}/cancel?refundUsage=false`), {
         method: 'POST',
         headers: {
           'accept': 'text/plain',
@@ -177,7 +178,7 @@ export default function BookingsManagePage() {
     try {
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
 
-      const response = await fetch(`/api/booking-payment/${markPaidOrderCode}/mark-paid`, {
+      const response = await fetch(getApiUrl(`booking-payment/${markPaidOrderCode}/mark-paid`), {
         method: 'POST',
         headers: {
           'accept': 'text/plain',

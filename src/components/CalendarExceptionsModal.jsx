@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiUrl } from '../config/api';
 
 export default function CalendarExceptionsModal({ courtId, isOpen, onClose, user }) {
   const [exceptions, setExceptions] = useState([]);
@@ -28,7 +29,7 @@ export default function CalendarExceptionsModal({ courtId, isOpen, onClose, user
       setError(null);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
-      const url = `/api/provider/courts/${courtId}/calendar-exceptions?from=${dateRange.from}&to=${dateRange.to}`;
+      const url = getApiUrl(`provider/courts/${courtId}/calendar-exceptions?from=${dateRange.from}&to=${dateRange.to}`);
       const res = await fetch(url, {
         method: 'GET',
         headers: {
@@ -66,7 +67,7 @@ export default function CalendarExceptionsModal({ courtId, isOpen, onClose, user
       setError(null);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
 
-      const res = await fetch(`/api/provider/courts/${courtId}/calendar-exceptions`, {
+      const res = await fetch(getApiUrl(`provider/courts/${courtId}/calendar-exceptions`), {
         method: 'POST',
         headers: {
           'accept': '*/*',
@@ -115,7 +116,7 @@ export default function CalendarExceptionsModal({ courtId, isOpen, onClose, user
     try {
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
-      const res = await fetch(`/api/provider/courts/${courtId}/calendar-exceptions/${exceptionId}`, {
+      const res = await fetch(getApiUrl(`provider/courts/${courtId}/calendar-exceptions/${exceptionId}`), {
         method: 'DELETE',
         headers: {
           'accept': '*/*',
