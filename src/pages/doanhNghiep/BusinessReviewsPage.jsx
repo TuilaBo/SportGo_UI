@@ -115,8 +115,8 @@ export default function BusinessReviewsPage() {
       });
 
       const url = filterType === 'court'
-        ? `/api/reviews/court/${selectedCourtId}?${params.toString()}`
-        : `/api/reviews/facility/${selectedFacilityId}?${params.toString()}`;
+        ? getApiUrl(`reviews/court/${selectedCourtId}?${params.toString()}`)
+        : getApiUrl(`reviews/facility/${selectedFacilityId}?${params.toString()}`);
       
       const response = await fetch(url, {
         method: 'GET',
