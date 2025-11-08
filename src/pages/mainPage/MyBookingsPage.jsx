@@ -5,6 +5,7 @@ import ManagerBar from '../../components/ManagerBar';
 import Footer from '../../components/Footer';
 import { useAuth } from '../../contexts/AuthContext';
 import BookingPaymentModal from '../../components/BookingPaymentModal';
+import { getApiUrl } from '../../config/api';
 
 const MyBookingsPage = () => {
   const { user } = useAuth();
@@ -44,7 +45,7 @@ const MyBookingsPage = () => {
         params.append('date', toApiDate(filterDate));
       }
 
-      const url = `/api/Bookings${params.toString() ? `?${params.toString()}` : ''}`;
+      const url = getApiUrl(`Bookings${params.toString() ? `?${params.toString()}` : ''}`);
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -84,7 +85,7 @@ const MyBookingsPage = () => {
       setLoadingDetails(prev => ({ ...prev, [bookingId]: true }));
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
 
-      const response = await fetch(`/api/Bookings/${bookingId}`, {
+      const response = await fetch(getApiUrl(`Bookings/${bookingId}`), {
         method: 'GET',
         headers: {
           'accept': 'application/json',
@@ -540,7 +541,7 @@ const MyBookingsPage = () => {
                       setReviewLoading(true);
                       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
 
-                      const response = await fetch('/api/reviews', {
+                      const response = await fetch(getApiUrl('reviews'), {
                         method: 'POST',
                         headers: {
                           'accept': 'text/plain',

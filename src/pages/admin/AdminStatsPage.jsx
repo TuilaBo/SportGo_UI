@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import AdminLayout from '../../components/layouts/AdminLayout';
 import { useAuth } from '../../contexts/AuthContext';
+import { getApiUrl } from '../../config/api';
 
 const AdminStatsPage = () => {
   const { user } = useAuth();
@@ -84,7 +85,7 @@ const AdminStatsPage = () => {
       setIsLoading(true);
       setError(null);
       try {
-        const url = `/api/admin/dashboard/overview?from=${fromDate}&to=${toDate}`;
+        const url = getApiUrl(`admin/dashboard/overview?from=${fromDate}&to=${toDate}`);
         const res = await fetch(url, {
           headers: {
             'accept': 'application/json',
@@ -122,7 +123,7 @@ const AdminStatsPage = () => {
       setIsTopProvidersLoading(true);
       setTopProvidersError(null);
       try {
-        const url = `/api/admin/dashboard/top-providers?from=${encodeURIComponent(toApiDate(fromDate))}&to=${encodeURIComponent(toApiDate(toDate))}&top=${encodeURIComponent(String(topProvidersLimit))}`;
+        const url = getApiUrl(`admin/dashboard/top-providers?from=${encodeURIComponent(toApiDate(fromDate))}&to=${encodeURIComponent(toApiDate(toDate))}&top=${encodeURIComponent(String(topProvidersLimit))}`);
         const res = await fetch(url, {
           headers: {
             'accept': 'application/json',
@@ -153,7 +154,7 @@ const AdminStatsPage = () => {
       setIsRevenueLoading(true);
       setRevenueError(null);
       try {
-        const url = `/api/admin/dashboard/revenue-breakdown?from=${encodeURIComponent(toApiDate(fromDate))}&to=${encodeURIComponent(toApiDate(toDate))}`;
+        const url = getApiUrl(`admin/dashboard/revenue-breakdown?from=${encodeURIComponent(toApiDate(fromDate))}&to=${encodeURIComponent(toApiDate(toDate))}`);
         const res = await fetch(url, {
           headers: {
             'accept': 'application/json',
@@ -184,7 +185,7 @@ const AdminStatsPage = () => {
       setIsTimeSeriesLoading(true);
       setTimeSeriesError(null);
       try {
-        const url = `/api/admin/dashboard/time-series?from=${encodeURIComponent(toApiDate(fromDate))}&to=${encodeURIComponent(toApiDate(toDate))}&granularity=day`;
+        const url = getApiUrl(`admin/dashboard/time-series?from=${encodeURIComponent(toApiDate(fromDate))}&to=${encodeURIComponent(toApiDate(toDate))}&granularity=day`);
         const res = await fetch(url, {
           headers: {
             'accept': 'application/json',
@@ -215,7 +216,7 @@ const AdminStatsPage = () => {
       setIsSportTypeLoading(true);
       setSportTypeError(null);
       try {
-        const url = `/api/admin/dashboard/sport-type-breakdown?from=${encodeURIComponent(toApiDate(fromDate))}&to=${encodeURIComponent(toApiDate(toDate))}`;
+        const url = getApiUrl(`admin/dashboard/sport-type-breakdown?from=${encodeURIComponent(toApiDate(fromDate))}&to=${encodeURIComponent(toApiDate(toDate))}`);
         const res = await fetch(url, {
           headers: {
             'accept': 'application/json',
@@ -249,7 +250,7 @@ const AdminStatsPage = () => {
       setIsTopPackagesLoading(true);
       setTopPackagesError(null);
       try {
-        const url = `/api/admin/dashboard/top-packages?from=${encodeURIComponent(toApiDate(fromDate))}&to=${encodeURIComponent(toApiDate(toDate))}&top=${encodeURIComponent(String(topPackagesLimit))}`;
+        const url = getApiUrl(`admin/dashboard/top-packages?from=${encodeURIComponent(toApiDate(fromDate))}&to=${encodeURIComponent(toApiDate(toDate))}&top=${encodeURIComponent(String(topPackagesLimit))}`);
         const res = await fetch(url, {
           headers: {
             'accept': 'application/json',
@@ -280,7 +281,7 @@ const AdminStatsPage = () => {
       setIsSystemHealthLoading(true);
       setSystemHealthError(null);
       try {
-        const res = await fetch('/api/admin/dashboard/system-health', {
+        const res = await fetch(getApiUrl('admin/dashboard/system-health'), {
           headers: {
             'accept': 'application/json',
             'Authorization': `Bearer ${user.accessToken}`

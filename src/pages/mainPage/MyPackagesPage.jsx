@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import ManagerBar from '../../components/ManagerBar';
 import Footer from '../../components/Footer';
+import { getApiUrl } from '../../config/api';
 
 const MyPackagesPage = () => {
   const { user } = useAuth();
@@ -26,7 +27,7 @@ const MyPackagesPage = () => {
 
       const accessToken = user.accessToken || localStorage.getItem('accessToken');
       
-      const response = await fetch(`/api/packages/mine?onlyActive=true&page=${page}&size=20`, {
+      const response = await fetch(getApiUrl(`packages/mine?onlyActive=true&page=${page}&size=20`), {
         method: 'GET',
         headers: {
           'accept': 'application/json',

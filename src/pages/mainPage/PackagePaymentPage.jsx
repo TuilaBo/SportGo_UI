@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
+import { getApiUrl } from '../../config/api';
 
 export default function PackagePaymentPage() {
   const navigate = useNavigate();
@@ -37,7 +38,7 @@ export default function PackagePaymentPage() {
       console.log('Loading order details for orderId:', orderId);
       console.log('Using accessToken:', accessToken ? 'Yes' : 'No');
       
-      const res = await fetch(`/api/packages/order/${orderId}`, {
+      const res = await fetch(getApiUrl(`packages/order/${orderId}`), {
         method: 'GET',
         headers: {
           'accept': 'application/json',
@@ -96,7 +97,7 @@ export default function PackagePaymentPage() {
     try {
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
-      const res = await fetch(`/api/packages/payment-status/${orderId}`, {
+      const res = await fetch(getApiUrl(`packages/payment-status/${orderId}`), {
         method: 'GET',
         headers: {
           'accept': 'application/json',
@@ -121,7 +122,7 @@ export default function PackagePaymentPage() {
         // Reload order details to get updated info
         if (orderId) {
           const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-          const res = await fetch(`/api/packages/order/${orderId}`, {
+          const res = await fetch(getApiUrl(`packages/order/${orderId}`), {
             method: 'GET',
             headers: {
               'accept': 'application/json',

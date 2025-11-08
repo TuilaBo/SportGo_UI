@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiUrl } from '../config/api';
 
 const DAYS_OF_WEEK = [
   { key: 'sunday', label: 'Chủ nhật' },
@@ -35,7 +36,7 @@ export default function OperatingHoursModal({ courtId, isOpen, onClose, user }) 
       setError(null);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
-      const res = await fetch(`/api/provider/courts/${courtId}/operating-hours`, {
+      const res = await fetch(getApiUrl(`provider/courts/${courtId}/operating-hours`), {
         method: 'GET',
         headers: {
           'accept': 'application/json, text/plain',
@@ -107,7 +108,7 @@ export default function OperatingHoursModal({ courtId, isOpen, onClose, user }) 
         closeTime: hour.closeTime
       }));
 
-      const res = await fetch(`/api/provider/courts/${courtId}/operating-hours/bulk`, {
+      const res = await fetch(getApiUrl(`provider/courts/${courtId}/operating-hours/bulk`), {
         method: 'PUT',
         headers: {
           'accept': '*/*',

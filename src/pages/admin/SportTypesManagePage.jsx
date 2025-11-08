@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/layouts/AdminLayout';
 import { useAuth } from '../../contexts/AuthContext';
+import { getApiUrl } from '../../config/api';
 
 export default function SportTypesManagePage() {
   const { user } = useAuth();
@@ -38,7 +39,7 @@ export default function SportTypesManagePage() {
         IsActive: isActive.toString()
       });
 
-      const res = await fetch(`/api/admin/sport-types?${params}`, {
+      const res = await fetch(getApiUrl(`admin/sport-types?${params}`), {
         method: 'GET',
         headers: {
           'accept': 'application/json',
@@ -70,7 +71,7 @@ export default function SportTypesManagePage() {
       setFormError(null);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
-      const res = await fetch('/api/admin/sport-types', {
+      const res = await fetch(getApiUrl('admin/sport-types'), {
         method: 'POST',
         headers: {
           'accept': 'text/plain',
@@ -103,7 +104,7 @@ export default function SportTypesManagePage() {
       setFormError(null);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
-      const res = await fetch(`/api/admin/sport-types/${editingId}`, {
+      const res = await fetch(getApiUrl(`admin/sport-types/${editingId}`), {
         method: 'PUT',
         headers: {
           'accept': 'text/plain',
@@ -135,7 +136,7 @@ export default function SportTypesManagePage() {
     try {
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
-      const res = await fetch(`/api/admin/sport-types/${id}`, {
+      const res = await fetch(getApiUrl(`admin/sport-types/${id}`), {
         method: 'DELETE',
         headers: {
           'accept': 'text/plain',
@@ -425,6 +426,7 @@ export default function SportTypesManagePage() {
     </AdminLayout>
   );
 }
+
 
 
 

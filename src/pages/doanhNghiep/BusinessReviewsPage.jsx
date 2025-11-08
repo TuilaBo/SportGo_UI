@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import BusinessLayout from '../../components/layouts/BusinessLayout';
 import { useAuth } from '../../contexts/AuthContext';
+import { getApiUrl } from '../../config/api';
 
 export default function BusinessReviewsPage() {
   const { user } = useAuth();
@@ -34,7 +35,7 @@ export default function BusinessReviewsPage() {
           setFacilities([]);
           return;
         }
-        const res = await fetch('/api/provider/facilities?page=1&size=50', {
+        const res = await fetch(getApiUrl('provider/facilities?page=1&size=50'), {
           headers: { 'accept': 'application/json', 'Authorization': `Bearer ${accessToken}` }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -72,7 +73,7 @@ export default function BusinessReviewsPage() {
       try {
         setLoadingCourts(true);
         const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-        const res = await fetch(`/api/provider/facilities/${selectedFacilityId}/courts?page=1&size=50`, {
+        const res = await fetch(getApiUrl(`provider/facilities/${selectedFacilityId}/courts?page=1&size=50`), {
           headers: { 'accept': 'application/json', 'Authorization': `Bearer ${accessToken}` }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -157,7 +158,7 @@ export default function BusinessReviewsPage() {
         setLoadingStats(true);
         setStatsError(null);
         const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-        const res = await fetch(`/api/reviews/facility/${selectedFacilityId}/stats`, {
+        const res = await fetch(getApiUrl(`reviews/facility/${selectedFacilityId}/stats`), {
           headers: { 'accept': 'application/json', 'Authorization': `Bearer ${accessToken}` }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -187,7 +188,7 @@ export default function BusinessReviewsPage() {
         setLoadingCourtStats(true);
         setCourtStatsError(null);
         const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-        const res = await fetch(`/api/reviews/court/${selectedCourtId}/stats`, {
+        const res = await fetch(getApiUrl(`reviews/court/${selectedCourtId}/stats`), {
           headers: { 'accept': 'application/json', 'Authorization': `Bearer ${accessToken}` }
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);

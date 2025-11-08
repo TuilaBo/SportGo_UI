@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useMemo } from
 import { useEffect } from 'react';
 import { getUserInfo, logoutUser } from '../services/authService';
 import { generateUserAvatar } from '../utils/avatarGenerator';
+import { getApiUrl } from '../config/api';
 
 const AuthContext = createContext();
 
@@ -41,7 +42,7 @@ export const AuthProvider = ({ children }) => {
           return;
         }
 
-        const res = await fetch('/api/Auth/refresh-token', {
+        const res = await fetch(getApiUrl('Auth/refresh-token'), {
           method: 'POST',
           headers: {
             'accept': 'application/json',
@@ -117,7 +118,7 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      const res = await fetch('/api/Auth/refresh-token', {
+      const res = await fetch(getApiUrl('Auth/refresh-token'), {
         method: 'POST',
         headers: {
           'accept': 'application/json',
@@ -257,7 +258,7 @@ export const AuthProvider = ({ children }) => {
               return;
             }
 
-            const res = await fetch('/api/Auth/refresh-token', {
+            const res = await fetch(getApiUrl('Auth/refresh-token'), {
               method: 'POST',
               headers: {
                 'accept': 'application/json',

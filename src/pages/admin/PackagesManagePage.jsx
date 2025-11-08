@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/layouts/AdminLayout';
 import { useAuth } from '../../contexts/AuthContext';
+import { getApiUrl } from '../../config/api';
 
 export default function PackagesManagePage() {
   const { user } = useAuth();
@@ -43,7 +44,7 @@ export default function PackagesManagePage() {
         IsActive: isActive.toString()
       });
 
-      const res = await fetch(`/api/admin/packages?${params}`, {
+      const res = await fetch(getApiUrl(`admin/packages?${params}`), {
         method: 'GET',
         headers: {
           'accept': 'application/json',
@@ -75,7 +76,7 @@ export default function PackagesManagePage() {
       setFormError(null);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
-      const res = await fetch('/api/admin/packages', {
+      const res = await fetch(getApiUrl('admin/packages'), {
         method: 'POST',
         headers: {
           'accept': 'text/plain',
@@ -108,7 +109,7 @@ export default function PackagesManagePage() {
       setFormError(null);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
-      const res = await fetch(`/api/admin/packages/${editingId}`, {
+      const res = await fetch(getApiUrl(`admin/packages/${editingId}`), {
         method: 'PUT',
         headers: {
           'accept': 'text/plain',
@@ -140,7 +141,7 @@ export default function PackagesManagePage() {
     try {
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
-      const res = await fetch(`/api/admin/packages/${id}`, {
+      const res = await fetch(getApiUrl(`admin/packages/${id}`), {
         method: 'DELETE',
         headers: {
           'accept': 'text/plain',
@@ -520,6 +521,7 @@ export default function PackagesManagePage() {
     </AdminLayout>
   );
 }
+
 
 
 

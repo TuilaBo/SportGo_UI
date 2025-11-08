@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import AdminLayout from '../../components/layouts/AdminLayout';
 import { useAuth } from '../../contexts/AuthContext';
 import GoogleMapEmbed from '../../components/GoogleMapEmbed';
+import { getApiUrl } from '../../config/api';
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -62,7 +63,7 @@ export default function AdminDashboard() {
           setProvidersLoading(false);
           return;
         }
-        const url = `/api/Admin/providers?PageNumber=${provPage}&PageSize=${provPageSize}`;
+        const url = getApiUrl(`Admin/providers?PageNumber=${provPage}&PageSize=${provPageSize}`);
         const res = await fetch(url, {
           method: 'GET',
           headers: {
@@ -112,7 +113,7 @@ export default function AdminDashboard() {
         .filter((id) => providerStatuses[id] === undefined);
       for (const id of idsToFetch) {
         try {
-          const res = await fetch(`/api/Admin/providers/${id}`, {
+          const res = await fetch(getApiUrl(`Admin/providers/${id}`), {
             method: 'GET',
             headers: {
               'accept': 'application/json, text/plain',
@@ -144,7 +145,7 @@ export default function AdminDashboard() {
       setProviderDetailError(null);
       setProviderDetailLoading(true);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-      const url = `/api/Admin/providers/${userId}`;
+      const url = getApiUrl(`Admin/providers/${userId}`);
       const res = await fetch(url, {
         method: 'GET',
         headers: {
@@ -188,7 +189,7 @@ export default function AdminDashboard() {
     try {
       setActionLoading(true);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-      const url = `/api/Admin/providers/${userId}/approve`;
+      const url = getApiUrl(`Admin/providers/${userId}/approve`);
       const res = await fetch(url, {
         method: 'POST',
         headers: {
@@ -215,7 +216,7 @@ export default function AdminDashboard() {
     try {
       setActionLoading(true);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
-      const url = `/api/Admin/providers/${userId}/reject`;
+      const url = getApiUrl(`Admin/providers/${userId}/reject`);
       const res = await fetch(url, {
         method: 'POST',
         headers: {

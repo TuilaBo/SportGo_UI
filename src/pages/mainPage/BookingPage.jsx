@@ -6,6 +6,7 @@ import Footer from '../../components/Footer';
 import { useAuth } from '../../contexts/AuthContext';
 import GoogleMapEmbed from '../../components/GoogleMapEmbed';
 import BookingPaymentModal from '../../components/BookingPaymentModal';
+import { getApiUrl } from '../../config/api';
 
 const BookingPage = () => {
   const { isLoggedIn, user, logout } = useAuth();
@@ -56,7 +57,7 @@ const BookingPage = () => {
   useEffect(() => {
     const loadSportTypes = async () => {
       try {
-        const res = await fetch('/api/sport-types', {
+        const res = await fetch(getApiUrl('sport-types'), {
           method: 'GET',
           headers: {
             'accept': 'application/json'
@@ -95,7 +96,7 @@ const BookingPage = () => {
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
       const apiDate = encodeURIComponent(toApiDate(selectedDate));
-      const res = await fetch(`/api/search/facilities?sportTypeId=${selectedSportType.sportTypeId}&date=${apiDate}&tier=${selectedTier}&page=1&size=20&q=`, {
+      const res = await fetch(getApiUrl(`search/facilities?sportTypeId=${selectedSportType.sportTypeId}&date=${apiDate}&tier=${selectedTier}&page=1&size=20&q=`), {
         method: 'GET',
         headers: {
           'accept': 'application/json',
@@ -124,7 +125,7 @@ const BookingPage = () => {
       setCourtsError(null);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
-      const res = await fetch(`/api/search/facilities/${facilityId}/courts?sportTypeId=${selectedSportType.sportTypeId}&page=1&size=20`, {
+      const res = await fetch(getApiUrl(`search/facilities/${facilityId}/courts?sportTypeId=${selectedSportType.sportTypeId}&page=1&size=20`), {
         method: 'GET',
         headers: {
           'accept': 'application/json',
@@ -153,7 +154,7 @@ const BookingPage = () => {
       setSlotsError(null);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
-      const res = await fetch(`/courts/courts/${courtId}/slots?date=${selectedDate}&tier=${selectedTier}`, {
+      const res = await fetch(getApiUrl(`courts/${courtId}/slots?date=${selectedDate}&tier=${selectedTier}`), {
         method: 'GET',
         headers: {
           'accept': 'application/json',
@@ -217,7 +218,7 @@ const BookingPage = () => {
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
       // Call the actual booking API
-      const response = await fetch('/api/Bookings', {
+      const response = await fetch(getApiUrl('Bookings'), {
         method: 'POST',
         headers: {
           'accept': 'text/plain',
