@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import GoogleMapEmbed from './GoogleMapEmbed';
 import BookingPaymentModal from './BookingPaymentModal';
-import { getApiUrl } from '../config/api';
+import { getApiUrl, getApiRootUrl } from '../config/api';
 
 export default function SearchFacilities() {
   const { user } = useAuth();
@@ -20,6 +20,13 @@ export default function SearchFacilities() {
   const [error, setError] = useState(null);
   const [showResults, setShowResults] = useState(false);
   
+  // Reviews modal state
+  const [reviewsOpen, setReviewsOpen] = useState(false);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsError, setReviewsError] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [reviewsFacility, setReviewsFacility] = useState(null);
+
   // Facility detail modal states
   const [selectedFacility, setSelectedFacility] = useState(null);
   const [facilityDetail, setFacilityDetail] = useState(null);
@@ -119,7 +126,8 @@ export default function SearchFacilities() {
       }
 
       const data = await res.json();
-      setResults(Array.isArray(data.items) ? data.items : []);
+      const items = Array.isArray(data.items) ? data.items : [];
+      setResults(items);
       setShowResults(true);
     } catch (e) {
       setError(e.message || String(e));
@@ -132,6 +140,43 @@ export default function SearchFacilities() {
   const handleSubmit = (e) => {
     e.preventDefault();
     searchFacilities();
+  };
+
+  const openFacilityReviews = async (facility) => {
+    try {
+      setReviewsFacility(facility);
+      setReviewsOpen(true);
+      setReviewsLoading(true);
+      setReviewsError(null);
+      setReviews([]);
+      const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
+      const res = await fetch(getApiUrl(`reviews/facility/${facility.facilityId}?page=1&size=5`), {
+        method: 'GET',
+        headers: {
+          'accept': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || `HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      setReviews(Array.isArray(data) ? data : []);
+    } catch (e) {
+      setReviewsError(e.message || String(e));
+      setReviews([]);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const closeFacilityReviews = () => {
+    setReviewsOpen(false);
+    setReviewsFacility(null);
+    setReviews([]);
+    setReviewsError(null);
+    setReviewsLoading(false);
   };
 
   // Load facility detail
@@ -150,8 +195,19 @@ export default function SearchFacilities() {
       });
 
       if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(errorText || `HTTP ${res.status}`);
+        // Graceful fallback for 404: render minimal detail from selectedFacility and continue
+        if (res.status === 404) {
+          setFacilityDetail({
+            facilityId,
+            name: (selectedFacility && selectedFacility.facilityName) || '',
+            address: (selectedFacility && selectedFacility.fullAddress) || '',
+            description: ''
+          });
+        } else {
+          const errorText = await res.text();
+          throw new Error(errorText || `HTTP ${res.status}`);
+        }
+        return;
       }
 
       const data = await res.json();
@@ -201,7 +257,8 @@ export default function SearchFacilities() {
       setSlotsError(null);
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
-      const res = await fetch(getApiUrl(`courts/${courtId}/slots?date=${searchForm.date}&tier=${searchForm.tier}`), {
+      // Slots service is hosted at domain root (no /api prefix)
+      const res = await fetch(getApiRootUrl(`courts/courts/${courtId}/slots?date=${encodeURIComponent(toApiDate(searchForm.date))}&tier=${encodeURIComponent(searchForm.tier)}`), {
         method: 'GET',
         headers: {
           'accept': 'application/json',
@@ -291,7 +348,7 @@ export default function SearchFacilities() {
       const accessToken = (user && user.accessToken) || localStorage.getItem('accessToken');
       
       // Call the actual booking API
-      const response = await fetch(getApiUrl('bookings'), {
+      const response = await fetch(getApiUrl('Bookings'), {
         method: 'POST',
         headers: {
           'accept': 'application/json',
@@ -482,6 +539,20 @@ export default function SearchFacilities() {
                         <p className="text-gray-600 text-sm">
                           📍 {facility.fullAddress}
                         </p>
+                        {(typeof facility.averageRating !== 'undefined' || typeof facility.totalReviews !== 'undefined') && (
+                          <div className="text-sm text-gray-700 mt-2 flex items-center gap-3">
+                            <span>
+                              ⭐ {typeof facility.averageRating === 'number' ? facility.averageRating.toFixed(1) : (facility.averageRating ?? '—')}
+                            </span>
+                            <span>({facility.totalReviews || 0} đánh giá)</span>
+                            <button
+                              className="text-blue-600 hover:underline"
+                              onClick={(e) => { e.stopPropagation(); openFacilityReviews(facility); }}
+                            >
+                              Xem đánh giá
+                            </button>
+                          </div>
+                        )}
                         {facility.distanceKm && (
                           <p className="text-blue-600 text-sm mt-1">
                             📏 Cách {facility.distanceKm}km
@@ -532,7 +603,23 @@ export default function SearchFacilities() {
                         </div>
 
                         <div className="mt-4 flex justify-end">
-                          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                          <button
+                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const rec = facility.recommended;
+                              if (!rec) return;
+                              // Construct minimal court object for booking flow
+                              const court = {
+                                courtId: rec.courtId,
+                                name: rec.courtName,
+                                courtType: rec.sportTypeName || 'Sân',
+                                defaultPrice: rec.priceFrom || 0,
+                                isActive: true,
+                              };
+                              openBookingModal(court);
+                            }}
+                          >
                             Đặt sân ngay
                           </button>
                         </div>
@@ -542,6 +629,73 @@ export default function SearchFacilities() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Reviews Modal */}
+        {reviewsOpen && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Đánh giá - {reviewsFacility?.facilityName}
+                </h3>
+                <button
+                  onClick={closeFacilityReviews}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {reviewsLoading && (
+                <div className="text-center py-6">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <p className="mt-2 text-sm text-gray-600">Đang tải đánh giá...</p>
+                </div>
+              )}
+
+              {reviewsError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3 text-sm text-red-700">
+                  {reviewsError}
+                </div>
+              )}
+
+              {!reviewsLoading && !reviewsError && reviews.length === 0 && (
+                <div className="text-center py-6 text-gray-500">
+                  Chưa có đánh giá nào
+                </div>
+              )}
+
+              {!reviewsLoading && !reviewsError && reviews.length > 0 && (
+                <div className="space-y-3">
+                  {reviews.map((rv, idx) => (
+                    <div key={idx} className="border rounded-lg p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-gray-700">
+                          ⭐ {typeof rv.rating === 'number' ? rv.rating.toFixed(1) : rv.rating}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {rv.createdAt ? new Date(rv.createdAt).toLocaleString('vi-VN') : ''}
+                        </div>
+                      </div>
+                      {rv.comment && (
+                        <div className="text-sm text-gray-800 mt-2">
+                          {rv.comment}
+                        </div>
+                      )}
+                      {rv.userName && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          bởi {rv.userName}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -618,6 +772,84 @@ export default function SearchFacilities() {
                       )}
                     </div>
                   </div>
+
+                  {/* Ratings & Recent Reviews */}
+                  {(typeof facilityDetail.averageRating !== 'undefined' || typeof facilityDetail.totalReviews !== 'undefined') && (
+                    <div className="bg-yellow-50 rounded-lg p-4">
+                      <h5 className="text-lg font-semibold text-yellow-900 mb-3">Đánh giá</h5>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                        <div className="bg-white rounded-lg p-4 border">
+                          <div className="text-gray-600 mb-1">Điểm trung bình</div>
+                          <div className="text-2xl font-bold text-yellow-600">
+                            {typeof facilityDetail.averageRating === 'number'
+                              ? facilityDetail.averageRating.toFixed(1)
+                              : (facilityDetail.averageRating ?? '—')}
+                          </div>
+                        </div>
+                        <div className="bg-white rounded-lg p-4 border">
+                          <div className="text-gray-600 mb-1">Tổng đánh giá</div>
+                          <div className="text-2xl font-bold text-gray-800">
+                            {facilityDetail.totalReviews || 0}
+                          </div>
+                        </div>
+                        <div className="md:col-span-2 bg-white rounded-lg p-4 border">
+                          <div className="text-gray-600 mb-2">Phân bố sao</div>
+                          <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-center">
+                            <div>
+                              <div className="text-xs text-gray-500">5★</div>
+                              <div className="font-semibold">{facilityDetail.ratingBreakdown?.fiveStars ?? 0}</div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-gray-500">4★</div>
+                              <div className="font-semibold">{facilityDetail.ratingBreakdown?.fourStars ?? 0}</div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-gray-500">3★</div>
+                              <div className="font-semibold">{facilityDetail.ratingBreakdown?.threeStars ?? 0}</div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-gray-500">2★</div>
+                              <div className="font-semibold">{facilityDetail.ratingBreakdown?.twoStars ?? 0}</div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-gray-500">1★</div>
+                              <div className="font-semibold">{facilityDetail.ratingBreakdown?.oneStar ?? 0}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-4">
+                        <div className="text-gray-700 font-medium mb-2">Đánh giá gần đây</div>
+                        {Array.isArray(facilityDetail.recentReviews) && facilityDetail.recentReviews.length > 0 ? (
+                          <div className="space-y-3">
+                            {facilityDetail.recentReviews.map((rv) => (
+                              <div key={rv.reviewId ?? rv.createdAt} className="bg-white rounded-lg p-3 border">
+                                <div className="flex items-center justify-between">
+                                  <div className="text-sm text-gray-800">
+                                    ⭐ {typeof rv.rating === 'number' ? rv.rating.toFixed(1) : rv.rating}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {rv.createdAt ? new Date(rv.createdAt).toLocaleString('vi-VN') : ''}
+                                  </div>
+                                </div>
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {rv.userName ? `bởi ${rv.userName}` : ''}{rv.courtName ? ` • ${rv.courtName}` : ''}
+                                </div>
+                                {rv.comment && (
+                                  <div className="text-sm text-gray-900 mt-2">
+                                    {rv.comment}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-500">Chưa có đánh giá nào.</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Google Map */}
                   {(facilityDetail.address || selectedFacility?.fullAddress) && (
