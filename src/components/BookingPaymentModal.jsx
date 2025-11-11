@@ -60,8 +60,8 @@ const BookingPaymentModal = ({ isOpen, onClose, bookingId, paymentType, accessTo
           setPaymentStatus(null);
 
           const endpoint = paymentType === 'deposit' 
-            ? `/api/booking-payment/${bookingId}/deposit/checkout`
-            : `/api/booking-payment/${bookingId}/final/checkout`;
+            ? getApiUrl(`booking-payment/${bookingId}/deposit/checkout`)
+            : getApiUrl(`booking-payment/${bookingId}/final/checkout`);
 
           const res = await fetch(endpoint, {
             method: 'POST',
