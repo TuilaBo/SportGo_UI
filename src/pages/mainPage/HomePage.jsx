@@ -48,6 +48,16 @@ const HomePage = () => {
                 Đặt sân ngay
               </button>
               <div className="flex flex-col sm:flex-row gap-4 animate-slide-up">
+                <a 
+                  href="/SportGo.apk" 
+                  download="SportGo.apk"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold"
+                >
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                  </svg>
+                  Tải cho Android
+                </a>
                 <img 
                   src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" 
                   alt="Get it on Google Play" 
